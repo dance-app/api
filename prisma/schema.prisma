@@ -15,8 +15,30 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  fullName String?
+
+  accounts Account[]
+
+  @@map("users")
+}
+
+model Account {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  provider AccountProvider
   email String
   password String
 
-  fullName String?
+  userId Int
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("accounts")
+}
+
+enum AccountProvider {
+  LOCAL
+  GOOGLE
+  FACEBOOK
 }
