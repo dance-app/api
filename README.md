@@ -77,3 +77,19 @@ Nest is [MIT licensed](LICENSE).
 ```
 docker-compose up dev-db
 ```
+
+# Database with Prisma
+
+## Start prisma studio
+
+```
+npx prisma studio
+```
+
+## Migrate
+
+After changing schema
+
+```
+npx prisma migrate dev
+```
