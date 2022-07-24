@@ -1,4 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { AccountProvider } from '@prisma/client';
 import * as argon from 'argon2';
 import { DatabaseService } from 'src/database/database.service';
@@ -7,7 +9,11 @@ import { AuthDto } from './dto';
 
 @Injectable({})
 export class AuthService {
-  constructor(private database: DatabaseService) {}
+  constructor(
+    private database: DatabaseService,
+    private jwt: JwtService,
+    private config: ConfigService,
+  ) {}
 
   async signUp(authDto: AuthDto) {
     const existingAccount = await this.database.account.findFirst({
@@ -56,17 +62,22 @@ export class AuthService {
     if (!isPasswordCorrect)
       throw new ForbiddenException('Credentials not correct');
 
-    const user = await this.database.user.findUnique({
-      where: {
-        id: account.userId,
-      },
-      include: {
-        accounts: true,
-      },
+    const signedToken = await this.signToken(account.userId, account.email);
+
+    return {
+      accessToken: `Bearer ${signedToken}`,
+    };
+  }
+
+  signToken(userId: number, email: string) {
+    const payload = {
+      sub: userId,
+      email,
+    };
+
+    return this.jwt.signAsync(payload, {
+      expiresIn: '15m',
+      secret: this.config.get('JWT_SECRET'),
     });
-
-    if (!user) throw new ForbiddenException('User not found');
-
-    return user;
   }
 }
