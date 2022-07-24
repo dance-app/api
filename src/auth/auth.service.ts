@@ -65,7 +65,7 @@ export class AuthService {
     const signedToken = await this.signToken(account.userId, account.email);
 
     return {
-      accessToken: `Bearer ${signedToken}`,
+      accessToken: signedToken,
     };
   }
 
