@@ -93,3 +93,6 @@ After changing schema
 ```
 npx prisma migrate dev
 ```
+
+https://www.youtube.com/watch?v=GHTA143_b-s
+2h45:49
