@@ -7,10 +7,10 @@ import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
-    AuthModule,
+    // AuthModule,
     ConfigModule.forRoot({ isGlobal: true }),
-    DatabaseModule,
-    UserModule,
+    // DatabaseModule,
+    // UserModule,
   ],
 })
 export class AppModule {}
