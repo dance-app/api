@@ -96,3 +96,11 @@ npx prisma migrate dev
 
 https://www.youtube.com/watch?v=GHTA143_b-s
 2h45:49
+
+# Tutorial followed: [video](https://www.youtube.com/watch?v=GHTA143_b-s)
+
+## Run the DB
+
+```
+docker compose up dev-db -d
+```
