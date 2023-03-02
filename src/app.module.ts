@@ -15,6 +15,7 @@ import { UserModule } from './user/user.module';
     EventModule,
     PingModule,
     UserModule,
+    UserModule,
   ],
 })
 export class AppModule {}
