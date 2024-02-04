@@ -11,7 +11,7 @@ import { UserModule } from './user/user.module';
     AuthModule,
     ConfigModule.forRoot({ isGlobal: true }),
     DatabaseModule,
-    // UserModule,
+    UserModule,
     PingModule,
   ],
 })
