@@ -8,9 +8,9 @@ import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
-    // AuthModule,
+    AuthModule,
     ConfigModule.forRoot({ isGlobal: true }),
-    // DatabaseModule,
+    DatabaseModule,
     // UserModule,
     PingModule,
   ],
