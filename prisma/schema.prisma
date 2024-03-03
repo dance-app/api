@@ -97,7 +97,7 @@ model Event {
   // @see https://developers.google.com/calendar/api/v3/reference/events#recurrence
   rule String[]
 
-  attendendees Attendee[]
+  attendees Attendee[]
 
   organizer Workspace @relation(fields: [organizerId], references: [id])
   organizerId Int
