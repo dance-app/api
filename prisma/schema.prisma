@@ -22,7 +22,8 @@ model User {
   fullName String?
 
   accounts Account[]
-  workspaces WorkspaceUser[]
+  workspaces Member[]
+  attendences Attendee[]
 
   @@map("users")
 }
@@ -50,7 +51,8 @@ model Workspace {
   name String
 
   configuration WorkspaceConfig?
-  members WorkspaceUser[]
+  members Member[]
+  events Event[]
 
   @@map("workspaces")
 }
@@ -68,7 +70,7 @@ model WorkspaceConfig {
   @@map("workspaceConfig")
 }
 
-model WorkspaceUser {
+model Member {
   user User @relation(fields: [userId], references: [id])
   userId Int
 
@@ -76,6 +78,44 @@ model WorkspaceUser {
   workspaceId Int
 
   @@id([userId, workspaceId])
+}
+
+model Event {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name String
+  description String?
+  dateStart DateTime
+  dateEnd DateTime?
+  location String?
+  capacityMin Int?
+  capacityMax Int?
+  leaderOffset Int? @default(0)
+  followerOffset Int? @default(0)
+  // @see https://developers.google.com/calendar/api/v3/reference/events#recurrence
+  rule String[]
+
+  attendendees Attendee[]
+
+  organizer Workspace @relation(fields: [organizerId], references: [id])
+  organizerId Int
+
+  @@map("events")
+}
+
+model Attendee {
+  role DanceRole
+  type AttendenceType
+
+  user User @relation(fields: [userId], references: [id])
+  userId Int
+
+  event Event @relation(fields: [eventId], references: [id])
+  eventId Int
+
+  @@id([userId, eventId])
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -94,4 +134,14 @@ enum WeekStart {
   SUNDAY
   MONDAY
   SATURDAY
+}
+
+enum AttendenceType {
+  VALIDATE
+  WAITING
+}
+
+enum DanceRole {
+  LEADER
+  FOLLOWER
 }
