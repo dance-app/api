@@ -89,6 +89,7 @@ model Event {
   description String?
   dateStart DateTime
   dateEnd DateTime?
+  duration String
   location String?
   capacityMin Int?
   capacityMax Int?
