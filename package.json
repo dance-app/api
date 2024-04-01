@@ -91,6 +91,6 @@
     "testEnvironment": "node"
   },
   "engine": {
-    "node": "18"
+    "node": "18.19.0"
   }
 }
