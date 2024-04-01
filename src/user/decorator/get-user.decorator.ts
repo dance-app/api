@@ -8,7 +8,7 @@ export const GetUserAccount = createParamDecorator(
      * Express is putting by default the result inside the `user` key from
      * request object
      */
-    const userAccount = request.user;
+    const userAccount = request;
 
     return userAccount;
   },

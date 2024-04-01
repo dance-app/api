@@ -4,7 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { EventModule } from './event/event.module';
-import { PingModule } from './ping/user.module';
+import { PingModule } from './ping/ping.module';
 import { UserModule } from './user/user.module';
 
 @Module({
@@ -14,7 +14,6 @@ import { UserModule } from './user/user.module';
     DatabaseModule,
     EventModule,
     PingModule,
-    UserModule,
     UserModule,
   ],
 })
