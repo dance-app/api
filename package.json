@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build && pnpm db:dev:migrate",
+    "build": "nest build && pnpm run db:dev:generate && pnpm run db:dev:migrate",
     "db:dev:debug": "npx prisma studio",
     "db:dev:generate": "npx prisma generate",
     "db:dev:deploy": "prisma migrate deploy",
