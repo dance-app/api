@@ -9,7 +9,10 @@ export const STRATEGY_NAME = 'jwt';
 
 @Injectable()
 export class JwTStrategy extends PassportStrategy(Strategy, STRATEGY_NAME) {
-  constructor(config: ConfigService, private database: DatabaseService) {
+  constructor(
+    config: ConfigService,
+    private database: DatabaseService,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       // TODO: handle refresh token then use the expiration

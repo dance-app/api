@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AccountProvider } from '@prisma/client';
 import * as argon from 'argon2';
 import { DatabaseService } from 'src/database/database.service';
+import { ApiError } from 'src/types';
 
 import { AuthDto } from './dto';
 
@@ -23,7 +24,8 @@ export class AuthService {
       },
     });
 
-    if (existingAccount) throw new ForbiddenException('Already signed up');
+    if (existingAccount)
+      throw new ForbiddenException(ApiError.ACCOUNT_ALREADY_EXISTS);
 
     const hash = await argon.hash(authDto.password);
     const user = await this.database.user.create({
@@ -52,7 +54,7 @@ export class AuthService {
       },
     });
 
-    if (!account) throw new ForbiddenException('Account not found');
+    if (!account) throw new ForbiddenException(ApiError.ACCOUNT_NOT_FOUND);
 
     const isPasswordCorrect = await argon.verify(
       account.password,
@@ -76,7 +78,7 @@ export class AuthService {
     };
 
     return this.jwt.signAsync(payload, {
-      expiresIn: '15m',
+      expiresIn: '100 days',
       secret: this.config.get('JWT_SECRET'),
     });
   }
