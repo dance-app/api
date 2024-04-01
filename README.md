@@ -7,7 +7,7 @@ REST API build with [Nest](https://github.com/nestjs/nest).
 ## Installation
 
 ```bash
-$ yarn install
+$ pnpm install
 ```
 
 ## Running the app
@@ -40,26 +40,26 @@ You can see the DB at [http://localhost:5555/](http://localhost:5555/)
 
 ```bash
 # development
-$ yarn start
+$ pnpm run start
 
 # watch mode
-$ yarn start:dev
+$ pnpm run start:dev
 
 # production mode
-$ yarn start:prod
+$ pnpm run start:prod
 ```
 
-### Run tests
+## Test
 
 ```bash
 # unit tests
-$ yarn test
+$ pnpm run test
 
 # e2e tests
-$ yarn test:e2e
+$ pnpm run test:e2e
 
 # test coverage
-$ yarn test:cov
+$ pnpm run test:cov
 ```
 
 ## Migrate
@@ -70,4 +70,4 @@ After changing schema
 npx prisma migrate dev
 ```
 
-# Tutorial followed: [video](https://www.youtube.com/watch?v=GHTA143_b-s)
+### Tutorial followed: [video](https://www.youtube.com/watch?v=GHTA143_b-s)
