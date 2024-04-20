@@ -1,19 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
+// import { ConfigService } from '@nestjs/config';
+// import { JwtService } from '@nestjs/jwt';
 // import { AccountProvider } from '@prisma/client';
 // import * as argon from 'argon2';
-import { DatabaseService } from 'src/database/database.service';
+// import { DatabaseService } from 'src/database/database.service';
 
 import { CreateEventDto } from './dto';
 
 @Injectable({})
 export class EventService {
-  constructor(
-    private database: DatabaseService,
-    private jwt: JwtService,
-    private config: ConfigService,
-  ) {}
+  constructor() {} // private config: ConfigService, // private jwt: JwtService, // private database: DatabaseService,
 
   readEvents() {
     return {
