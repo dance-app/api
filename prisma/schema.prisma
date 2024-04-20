@@ -88,9 +88,8 @@ model Event {
 
   name String
   description String?
-  dateStart DateTime
+  dateStart DateTime @db.Timestamptz(3)
   dateEnd DateTime? @db.Timestamptz(3)
-  duration String
   location String?
   capacityMin Int?
   capacityMax Int?

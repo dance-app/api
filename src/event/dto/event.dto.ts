@@ -4,16 +4,13 @@ import {
   IsNumber,
   IsDateString,
   IsOptional,
+  IsArray,
 } from 'class-validator';
 
-export class EventDto {
-  @IsNumber()
-  @IsNotEmpty()
-  id: number;
-
+export class CreateEventDto {
   @IsString()
   @IsNotEmpty()
-  title: string;
+  name: string;
 
   @IsOptional()
   @IsString()
@@ -27,11 +24,36 @@ export class EventDto {
   @IsDateString()
   dateEnd?: string;
 
-  @IsDateString()
-  @IsNotEmpty()
-  timezone: string;
-
   @IsOptional()
   @IsString()
   recurrenceRule?: string;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
+
+  @IsOptional()
+  @IsNumber()
+  capacityMin?: number;
+
+  @IsOptional()
+  @IsNumber()
+  capacityMax?: number;
+
+  @IsOptional()
+  @IsNumber()
+  leaderOffset?: number;
+
+  @IsOptional()
+  @IsNumber()
+  followerOffset?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  rule?: number[];
+
+  @IsNumber()
+  @IsNotEmpty()
+  organizerId: number;
 }

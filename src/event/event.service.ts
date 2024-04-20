@@ -1,19 +1,19 @@
 import { Injectable } from '@nestjs/common';
-// import { ConfigService } from '@nestjs/config';
-// import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 // import { AccountProvider } from '@prisma/client';
 // import * as argon from 'argon2';
-// import { DatabaseService } from 'src/database/database.service';
+import { DatabaseService } from 'src/database/database.service';
 
-import { EventDto } from './dto';
+import { CreateEventDto } from './dto';
 
 @Injectable({})
 export class EventService {
-  // constructor(
-  // private database: DatabaseService,
-  // private jwt: JwtService,
-  // private config: ConfigService,
-  // ) {}
+  constructor(
+    private database: DatabaseService,
+    private jwt: JwtService,
+    private config: ConfigService,
+  ) {}
 
   readEvents() {
     return {
@@ -30,16 +30,28 @@ export class EventService {
     };
   }
 
-  async createEvent(eventDto: EventDto) {
-    console.log('eventDto', eventDto);
-    return {
-      statusCode: 200,
-      data: getMockEvents()[0],
-      message: ['event created'],
-    };
+  async createEvent(data: CreateEventDto) {
+    console.log('eventDto', data);
+    try {
+      // const newUser = await this.database.event.create({
+      //   data: { fullName: data.fullName },
+      // });
+
+      return {
+        message: 'User created',
+        data: null,
+      };
+    } catch (error) {
+      return error.response;
+    }
+    // return {
+    //   statusCode: 200,
+    //   data: getMockEvents()[0],
+    //   message: ['event created'],
+    // };
   }
 
-  async updateEvent(eventId: string, eventDto: EventDto) {
+  async updateEvent(eventId: string, eventDto: CreateEventDto) {
     console.log('eventId', eventId);
     console.log('eventDto', eventDto);
     return {
