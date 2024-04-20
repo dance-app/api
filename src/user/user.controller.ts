@@ -7,11 +7,13 @@ import {
   Body,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { Account } from '@prisma/client';
+import { DEFAULT_PAGE_SIZE } from 'src/constants';
 import { GetUserAccount } from 'src/user/decorator';
 
-import { UserDto } from './dto';
+import { UserDto, PaginationDto } from './dto';
 import { UserService } from './user.service';
 import { JwtGuard } from '../auth/guard';
 
@@ -31,8 +33,13 @@ export class UserController {
   }
 
   @Get('')
-  getUsers() {
-    return this.userService.readAll();
+  getUsers(@Query() pagination) {
+    console.log('pagination', pagination);
+    const formattedPagination: PaginationDto = {
+      limit: Number(pagination.limit ?? DEFAULT_PAGE_SIZE.limit),
+      offset: Number(pagination.offset ?? DEFAULT_PAGE_SIZE.offset),
+    };
+    return this.userService.readAll(formattedPagination);
   }
 
   @Get(':id')
