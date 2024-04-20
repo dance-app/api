@@ -16,8 +16,8 @@ datasource db {
 
 model User {
   id Int @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   fullName String?
 
@@ -30,8 +30,8 @@ model User {
 
 model Account {
   id Int @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   provider AccountProvider
   email String
@@ -45,8 +45,8 @@ model Account {
 
 model Workspace {
   id Int @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   name String
 
@@ -59,8 +59,8 @@ model Workspace {
 
 model WorkspaceConfig {
   id Int @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   weekStart WeekStart
 
@@ -82,13 +82,13 @@ model Member {
 
 model Event {
   id Int @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   name String
   description String?
   dateStart DateTime
-  dateEnd DateTime?
+  dateEnd DateTime? @db.Timestamptz(3)
   duration String
   location String?
   capacityMin Int?

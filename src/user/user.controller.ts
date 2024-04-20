@@ -1,4 +1,13 @@
-import { Controller, Get, Post, UseGuards, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  UseGuards,
+  Body,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { Account } from '@prisma/client';
 import { GetUserAccount } from 'src/user/decorator';
 
@@ -16,13 +25,28 @@ export class UserController {
     return account;
   }
 
+  @Post('')
+  create(@Body() data: UserDto) {
+    return this.userService.create(data);
+  }
+
   @Get('')
   getUsers() {
     return this.userService.readAll();
   }
 
-  @Post('')
-  create(@Body() userDto: UserDto) {
-    return this.userService.create(userDto);
+  @Get(':id')
+  getUser(@Param('id') id: string) {
+    return this.userService.readById({ id: Number(id) });
+  }
+
+  @Patch(':id')
+  updateUser(@Param('id') id: string, @Body() data: UserDto) {
+    return this.userService.update(Number(id), data);
+  }
+
+  @Delete(':id')
+  delete(@Param('id') id: string) {
+    return this.userService.delete(Number(id));
   }
 }

@@ -25,14 +25,14 @@ pgadmin:
   - Put a meaningful name in `General` section
   - In the `Connection` tab, I've used:
     - Host name/address: `localhost`
-    - Port: 5432
+    - Port: `5432`
     - Maintenance database: `postgres`
     - Username: `admin` from the env var `DATABASE_URL`
     - Password: same as above
 
 3. I got an error message saying that the host was not accepting TCP/IP connection (see [here](https://www.pgadmin.org/docs/pgadmin4/development/connect_error.html))
 
-4. Checked the Postgres conection configuration with those steps:
+4. Checked the Postgres connection configuration with those steps:
   - run `docker exec -it api-dev-db-1 bash` to access my container
   - run `cd /var/lib/postgresql/data` to navigate to the config file
   - check that `postgresql.conf` does contain `listen_addresses` field and must be set to `'*'`
@@ -42,6 +42,9 @@ pgadmin:
   - Just exit typing the command `exit`
 
 5. Problem fixed by following steps [here](https://stackoverflow.com/a/72595405/9018593).
+  - Get docker container id via `docker ps` (eg: `a19741097fd2`)
+  - Run `docker inspect CONTAINER_ID` (eg: `docker inspect a19741097fd2`)
   - Just had to replace in `Connection` the Host name/address from `localhost` to the IP address found in the `Network.bridge.IPAddress`
+  - Alternatively run `docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' a19741097fd2`
 
 6. It works 🥳
