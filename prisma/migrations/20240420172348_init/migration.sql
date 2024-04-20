@@ -13,9 +13,10 @@ CREATE TYPE "DanceRole" AS ENUM ('LEADER', 'FOLLOWER');
 -- CreateTable
 CREATE TABLE "users" (
     "id" SERIAL NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(3) NOT NULL,
     "fullName" TEXT,
+    "token" TEXT,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
@@ -23,8 +24,8 @@ CREATE TABLE "users" (
 -- CreateTable
 CREATE TABLE "accounts" (
     "id" SERIAL NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(3) NOT NULL,
     "provider" "AccountProvider" NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
@@ -36,8 +37,8 @@ CREATE TABLE "accounts" (
 -- CreateTable
 CREATE TABLE "workspaces" (
     "id" SERIAL NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(3) NOT NULL,
     "name" TEXT NOT NULL,
 
     CONSTRAINT "workspaces_pkey" PRIMARY KEY ("id")
@@ -46,8 +47,8 @@ CREATE TABLE "workspaces" (
 -- CreateTable
 CREATE TABLE "workspaceConfig" (
     "id" SERIAL NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(3) NOT NULL,
     "weekStart" "WeekStart" NOT NULL,
     "workspaceId" INTEGER NOT NULL,
 
@@ -65,12 +66,12 @@ CREATE TABLE "Member" (
 -- CreateTable
 CREATE TABLE "events" (
     "id" SERIAL NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(3) NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "dateStart" TIMESTAMP(3) NOT NULL,
-    "dateEnd" TIMESTAMP(3),
+    "dateEnd" TIMESTAMPTZ(3),
     "duration" TEXT NOT NULL,
     "location" TEXT,
     "capacityMin" INTEGER,

@@ -6,7 +6,7 @@ import * as argon from 'argon2';
 import { DatabaseService } from 'src/database/database.service';
 import { ApiError } from 'src/types';
 
-import { AuthDto } from './dto';
+import { SignInDto, SignUpDto } from './dto';
 
 @Injectable({})
 export class AuthService {
@@ -16,59 +16,82 @@ export class AuthService {
     private config: ConfigService,
   ) {}
 
-  async signUp(authDto: AuthDto) {
-    const existingAccount = await this.database.account.findFirst({
-      where: {
-        provider: AccountProvider.LOCAL,
-        email: authDto.email,
-      },
-    });
+  async signUp(data: SignUpDto) {
+    try {
+      const existingAccount = await this.database.account.findFirst({
+        where: {
+          provider: AccountProvider.LOCAL,
+          email: data.email,
+        },
+      });
 
-    if (existingAccount)
-      throw new ForbiddenException(ApiError.ACCOUNT_ALREADY_EXISTS);
+      if (existingAccount)
+        throw new ForbiddenException(ApiError.ACCOUNT_ALREADY_EXISTS);
 
-    const hash = await argon.hash(authDto.password);
-    const user = await this.database.user.create({
-      data: {
-        accounts: {
-          create: {
-            provider: AccountProvider.LOCAL,
-            email: authDto.email,
-            password: hash,
+      const hash = await argon.hash(data.password);
+      const user = await this.database.user.create({
+        data: {
+          fullName: data.fullName,
+          accounts: {
+            create: {
+              provider: AccountProvider.LOCAL,
+              email: data.email,
+              password: hash,
+            },
           },
         },
-      },
-      include: {
-        accounts: true,
-      },
-    });
+        include: {
+          accounts: true,
+        },
+      });
 
-    return user;
+      return {
+        message: 'Sign up successfully',
+        data: user,
+      };
+    } catch (error) {
+      return error.response;
+    }
   }
 
-  async signIn(authDto: AuthDto) {
-    const account = await this.database.account.findFirst({
-      where: {
-        provider: AccountProvider.LOCAL,
-        email: authDto.email,
-      },
-    });
+  async signIn(data: SignInDto) {
+    try {
+      const account = await this.database.account.findFirst({
+        where: {
+          provider: AccountProvider.LOCAL,
+          email: data.email,
+        },
+      });
 
-    if (!account) throw new ForbiddenException(ApiError.ACCOUNT_NOT_FOUND);
+      if (!account) throw new ForbiddenException(ApiError.ACCOUNT_NOT_FOUND);
 
-    const isPasswordCorrect = await argon.verify(
-      account.password,
-      authDto.password,
-    );
+      const isPasswordCorrect = await argon.verify(
+        account.password,
+        data.password,
+      );
 
-    if (!isPasswordCorrect)
-      throw new ForbiddenException('Credentials not correct');
+      if (!isPasswordCorrect)
+        throw new ForbiddenException('Credentials not correct');
 
-    const signedToken = await this.signToken(account.userId, account.email);
+      const signedToken = await this.signToken(account.userId, account.email);
+      await this.database.user.update({
+        where: {
+          id: account.userId,
+        },
+        data: {
+          token: signedToken,
+        },
+      });
 
-    return {
-      accessToken: signedToken,
-    };
+      return {
+        data: {
+          message: 'Successfully logged in',
+          token: signedToken,
+        },
+      };
+    } catch (error) {
+      return error.response;
+    }
   }
 
   signToken(userId: number, email: string) {
