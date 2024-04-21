@@ -9,10 +9,10 @@ import {
   Delete,
   Query,
 } from '@nestjs/common';
-import { Account } from '@prisma/client';
+import { GetAuthUserAccount } from 'src/auth/decorator';
 import { JwtGuard } from 'src/auth/guard';
 import { DEFAULT_PAGE_SIZE } from 'src/constants';
-import { GetUserAccount } from 'src/user/decorator';
+import { UserWithAccount } from 'src/types';
 
 import { UserDto, PaginationDto } from './dto';
 import { UserService } from './user.service';
@@ -23,8 +23,8 @@ export class UserController {
 
   @UseGuards(JwtGuard)
   @Get('me')
-  getMe(@GetUserAccount() account: Omit<Account, 'password'>) {
-    return account;
+  getMe(@GetAuthUserAccount() authAccount: UserWithAccount) {
+    return authAccount;
   }
 
   @Post('')
