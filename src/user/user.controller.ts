@@ -7,14 +7,14 @@ import {
   Body,
   Param,
   Delete,
-  Query,
 } from '@nestjs/common';
 import { GetAuthUserAccount } from 'src/auth/decorator';
 import { JwtGuard } from 'src/auth/guard';
-import { DEFAULT_PAGE_SIZE } from 'src/constants';
+import { GetPagination } from 'src/pagination/decorator';
+import { PaginationDto } from 'src/pagination/dto';
 import { UserWithAccount } from 'src/types';
 
-import { UserDto, PaginationDto } from './dto';
+import { UserDto } from './dto';
 import { UserService } from './user.service';
 
 @Controller('users')
@@ -33,12 +33,8 @@ export class UserController {
   }
 
   @Get('')
-  getUsers(@Query() pagination) {
-    const formattedPagination: PaginationDto = {
-      limit: Number(pagination.limit ?? DEFAULT_PAGE_SIZE.limit),
-      offset: Number(pagination.offset ?? DEFAULT_PAGE_SIZE.offset),
-    };
-    return this.userService.readAll(formattedPagination);
+  getUsers(@GetPagination() paginationOptions: PaginationDto) {
+    return this.userService.readAll(paginationOptions);
   }
 
   @Get(':id')

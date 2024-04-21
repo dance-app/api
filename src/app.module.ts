@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { EventModule } from './event/event.module';
+import { PaginationModule } from './pagination/pagination.module';
 import { PingModule } from './ping/ping.module';
 import { UserModule } from './user/user.module';
 
@@ -15,6 +16,7 @@ import { UserModule } from './user/user.module';
     EventModule,
     PingModule,
     UserModule,
+    PaginationModule,
   ],
 })
 export class AppModule {}

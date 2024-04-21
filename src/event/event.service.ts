@@ -1,21 +1,29 @@
 import { Injectable } from '@nestjs/common';
-// import { ConfigService } from '@nestjs/config';
-// import { JwtService } from '@nestjs/jwt';
-// import { AccountProvider } from '@prisma/client';
-// import * as argon from 'argon2';
-// import { DatabaseService } from 'src/database/database.service';
+import { DatabaseService } from 'src/database/database.service';
+import { PaginationDto } from 'src/pagination/dto';
+import { PaginationService } from 'src/pagination/pagination.service';
 
 import { CreateEventDto } from './dto';
 
 @Injectable({})
 export class EventService {
-  constructor() {} // private config: ConfigService, // private jwt: JwtService, // private database: DatabaseService,
+  constructor(
+    private database: DatabaseService,
+    private pagination: PaginationService,
+  ) {}
 
-  readEvents() {
-    return {
-      statusCode: 200,
-      data: getMockEvents(),
-    };
+  async readEvents(paginationOptions: PaginationDto) {
+    try {
+      const events = await this.database.event.findMany({
+        ...this.pagination.extractPaginationOptions(paginationOptions),
+      });
+      return {
+        statusCode: 200,
+        data: events,
+      };
+    } catch (error) {
+      return error.response;
+    }
   }
 
   readEvent(eventId: string) {

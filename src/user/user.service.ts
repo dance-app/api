@@ -1,26 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import { User } from '@prisma/client';
-import { DEFAULT_PAGE_SIZE } from 'src/constants';
 import { DatabaseService } from 'src/database/database.service';
-
-import { PaginationDto } from './dto';
+import { PaginationDto } from 'src/pagination/dto';
+import { PaginationService } from 'src/pagination/pagination.service';
 
 @Injectable({})
 export class UserService {
-  constructor(private database: DatabaseService) {}
+  constructor(
+    private database: DatabaseService,
+    private pagination: PaginationService,
+  ) {}
 
-  async readAll(pagination: PaginationDto) {
+  async readAll(paginationOptions: PaginationDto) {
     const userCount = await this.database.user.count();
     const users = await this.database.user.findMany({
-      skip: pagination.offset ?? DEFAULT_PAGE_SIZE.offset,
-      take: pagination.limit ?? DEFAULT_PAGE_SIZE.limit,
+      ...this.pagination.extractPaginationOptions(paginationOptions),
     });
 
     return {
       meta: {
         totalCount: userCount,
         count: users.length,
-        ...pagination,
+        ...paginationOptions,
       },
       data: users,
     };

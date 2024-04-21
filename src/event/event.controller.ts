@@ -1,18 +1,19 @@
 import {
   Controller,
-  // Get,
+  Get,
   Post,
   // Delete,
   // Put,
-  // UseGuards,
+  UseGuards,
   Body,
   // Param,
 } from '@nestjs/common';
+import { JwtGuard } from 'src/auth/guard';
+import { GetPagination } from 'src/pagination/decorator';
+import { PaginationDto } from 'src/pagination/dto';
 
-// import { JwtGuard } from '../auth/guard';
 import { CreateEventDto } from './dto';
 import { EventService } from './event.service';
-
 @Controller('events')
 export class EventController {
   constructor(private eventService: EventService) {}
@@ -22,11 +23,11 @@ export class EventController {
     return this.eventService.createEvent(data);
   }
 
-  // @UseGuards(JwtGuard)
-  // @Get('')
-  // getEvents() {
-  //   return this.eventService.readEvents();
-  // }
+  @UseGuards(JwtGuard)
+  @Get('')
+  getEvents(@GetPagination() paginationOptions: PaginationDto) {
+    return this.eventService.readEvents(paginationOptions);
+  }
 
   // @Get(':eventId')
   // getEvent(@Param('serviceId') eventId: string) {
