@@ -10,12 +10,12 @@ import {
   Query,
 } from '@nestjs/common';
 import { Account } from '@prisma/client';
+import { JwtGuard } from 'src/auth/guard';
 import { DEFAULT_PAGE_SIZE } from 'src/constants';
 import { GetUserAccount } from 'src/user/decorator';
 
 import { UserDto, PaginationDto } from './dto';
 import { UserService } from './user.service';
-import { JwtGuard } from '../auth/guard';
 
 @Controller('users')
 export class UserController {
@@ -34,7 +34,6 @@ export class UserController {
 
   @Get('')
   getUsers(@Query() pagination) {
-    console.log('pagination', pagination);
     const formattedPagination: PaginationDto = {
       limit: Number(pagination.limit ?? DEFAULT_PAGE_SIZE.limit),
       offset: Number(pagination.offset ?? DEFAULT_PAGE_SIZE.offset),
