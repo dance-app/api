@@ -21,6 +21,7 @@ model User {
 
   fullName String?
   token String?
+  isSuperAdmin Boolean?
 
   accounts Account[]
   workspaces Member[]
@@ -78,6 +79,9 @@ model Member {
   workspace Workspace @relation(fields: [workspaceId], references: [id])
   workspaceId Int
 
+  role Role @relation(fields: [roleId], references: [id])
+  roleId Int
+
   @@id([userId, workspaceId])
 }
 
@@ -117,6 +121,32 @@ model Attendee {
   eventId Int
 
   @@id([userId, eventId])
+}
+
+model Role {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  name String
+
+  member Member[]
+  permission Permission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  name String
+
+  role Role @relation(fields: [roleId], references: [id])
+  roleId Int
+
+  @@map("permissions")
 }
 
 ////////////////////////////////////////////////////////////////////////////////
