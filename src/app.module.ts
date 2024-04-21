@@ -7,6 +7,7 @@ import { EventModule } from './event/event.module';
 import { PaginationModule } from './pagination/pagination.module';
 import { PingModule } from './ping/ping.module';
 import { UserModule } from './user/user.module';
+import { WorkspaceModule } from './workspace/workspace.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { UserModule } from './user/user.module';
     PingModule,
     UserModule,
     PaginationModule,
+    WorkspaceModule,
   ],
 })
 export class AppModule {}
