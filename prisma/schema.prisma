@@ -83,6 +83,7 @@ model Member {
   roleId Int
 
   @@id([userId, workspaceId])
+  @@map("members")
 }
 
 model Event {
@@ -121,6 +122,7 @@ model Attendee {
   eventId Int
 
   @@id([userId, eventId])
+  @@map("attendees")
 }
 
 model Role {
