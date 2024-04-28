@@ -62,12 +62,4 @@ $ pnpm run test:e2e
 $ pnpm run test:cov
 ```
 
-## Migrate
-
-After changing schema
-
-```
-npx prisma migrate dev
-```
-
 ### Tutorial followed: [video](https://www.youtube.com/watch?v=GHTA143_b-s)

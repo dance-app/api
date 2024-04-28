@@ -10,6 +10,9 @@ CREATE TYPE "AttendenceType" AS ENUM ('VALIDATE', 'WAITING');
 -- CreateEnum
 CREATE TYPE "DanceRole" AS ENUM ('LEADER', 'FOLLOWER');
 
+-- CreateEnum
+CREATE TYPE "WorkspaceRole" AS ENUM ('OWNER', 'TEACHER', 'STUDENT');
+
 -- CreateTable
 CREATE TABLE "users" (
     "id" SERIAL NOT NULL,
@@ -17,6 +20,7 @@ CREATE TABLE "users" (
     "updatedAt" TIMESTAMPTZ(3) NOT NULL,
     "fullName" TEXT,
     "token" TEXT,
+    "isSuperAdmin" BOOLEAN,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
@@ -56,11 +60,12 @@ CREATE TABLE "workspaceConfig" (
 );
 
 -- CreateTable
-CREATE TABLE "Member" (
+CREATE TABLE "members" (
     "userId" INTEGER NOT NULL,
     "workspaceId" INTEGER NOT NULL,
+    "roles" "WorkspaceRole"[],
 
-    CONSTRAINT "Member_pkey" PRIMARY KEY ("userId","workspaceId")
+    CONSTRAINT "members_pkey" PRIMARY KEY ("userId","workspaceId")
 );
 
 -- CreateTable
@@ -70,9 +75,8 @@ CREATE TABLE "events" (
     "updatedAt" TIMESTAMPTZ(3) NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
-    "dateStart" TIMESTAMP(3) NOT NULL,
+    "dateStart" TIMESTAMPTZ(3) NOT NULL,
     "dateEnd" TIMESTAMPTZ(3),
-    "duration" TEXT NOT NULL,
     "location" TEXT,
     "capacityMin" INTEGER,
     "capacityMax" INTEGER,
@@ -85,13 +89,13 @@ CREATE TABLE "events" (
 );
 
 -- CreateTable
-CREATE TABLE "Attendee" (
+CREATE TABLE "attendees" (
     "role" "DanceRole" NOT NULL,
     "type" "AttendenceType" NOT NULL,
     "userId" INTEGER NOT NULL,
     "eventId" INTEGER NOT NULL,
 
-    CONSTRAINT "Attendee_pkey" PRIMARY KEY ("userId","eventId")
+    CONSTRAINT "attendees_pkey" PRIMARY KEY ("userId","eventId")
 );
 
 -- CreateIndex
@@ -104,16 +108,16 @@ ALTER TABLE "accounts" ADD CONSTRAINT "accounts_userId_fkey" FOREIGN KEY ("userI
 ALTER TABLE "workspaceConfig" ADD CONSTRAINT "workspaceConfig_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "workspaces"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Member" ADD CONSTRAINT "Member_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "members" ADD CONSTRAINT "members_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Member" ADD CONSTRAINT "Member_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "workspaces"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "members" ADD CONSTRAINT "members_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "workspaces"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "events" ADD CONSTRAINT "events_organizerId_fkey" FOREIGN KEY ("organizerId") REFERENCES "workspaces"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Attendee" ADD CONSTRAINT "Attendee_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "attendees" ADD CONSTRAINT "attendees_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Attendee" ADD CONSTRAINT "Attendee_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "events"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "attendees" ADD CONSTRAINT "attendees_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "events"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -47,4 +47,7 @@ pgadmin:
   - Just had to replace in `Connection` the Host name/address from `localhost` to the IP address found in the `Network.bridge.IPAddress`
   - Alternatively run `docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' a19741097fd2`
 
+6. If the problem persist, replace the IP address by this
+- See: https://github.com/npgsql/efcore.pg/issues/225#issuecomment-532313931
+
 6. It works 🥳

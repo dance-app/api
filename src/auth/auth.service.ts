@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { AccountProvider } from '@prisma/client';
+import { AccountProvider, WorkspaceRole } from '@prisma/client';
 import * as argon from 'argon2';
 import { DatabaseService } from 'src/database/database.service';
 import { ApiError } from 'src/types';
@@ -37,6 +37,16 @@ export class AuthService {
               provider: AccountProvider.LOCAL,
               email: data.email,
               password: hash,
+            },
+          },
+          workspaces: {
+            create: {
+              workspace: {
+                create: {
+                  name: `${data.fullName}'s workspace`,
+                },
+              },
+              roles: [WorkspaceRole.STUDENT],
             },
           },
         },
