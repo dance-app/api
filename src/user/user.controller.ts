@@ -8,8 +8,8 @@ import {
   Param,
   Delete,
 } from '@nestjs/common';
-import { GetAuthUserAccount } from 'src/auth/decorator';
-import { JwtGuard } from 'src/auth/guard';
+import { GetAuthUserAccount, GetAllowedRoles } from 'src/auth/decorator';
+import { JwtGuard, RolesGuard } from 'src/auth/guard';
 import { GetPagination } from 'src/pagination/decorator';
 import { PaginationDto } from 'src/pagination/dto';
 import { UserWithAccount } from 'src/types';
@@ -17,6 +17,7 @@ import { UserWithAccount } from 'src/types';
 import { UserDto } from './dto';
 import { UserService } from './user.service';
 
+@UseGuards(JwtGuard, RolesGuard)
 @Controller('users')
 export class UserController {
   constructor(private userService: UserService) {}
@@ -33,21 +34,25 @@ export class UserController {
   }
 
   @Get('')
+  @GetAllowedRoles([], true)
   getUsers(@GetPagination() paginationOptions: PaginationDto) {
     return this.userService.readAll(paginationOptions);
   }
 
   @Get(':id')
+  @GetAllowedRoles([], true)
   getUser(@Param('id') id: string) {
     return this.userService.readById({ id: Number(id) });
   }
 
   @Patch(':id')
+  @GetAllowedRoles([], true)
   updateUser(@Param('id') id: string, @Body() data: UserDto) {
     return this.userService.update(Number(id), data);
   }
 
   @Delete(':id')
+  @GetAllowedRoles([], true)
   delete(@Param('id') id: string) {
     return this.userService.delete(Number(id));
   }
