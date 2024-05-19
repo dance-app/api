@@ -6,14 +6,17 @@ import {
   Body,
   Param,
   Delete,
+  UseGuards,
+  Query,
 } from '@nestjs/common';
+import { JwtGuard } from 'src/auth/guard';
 import { GetPagination } from 'src/pagination/decorator';
 import { PaginationDto } from 'src/pagination/dto';
 
 import { WorkspaceDto } from './dto';
 import { WorkspaceService } from './workspace.service';
-
-@Controller('workspace')
+@UseGuards(JwtGuard)
+@Controller('workspaces')
 export class WorkspaceController {
   constructor(private workspaceService: WorkspaceService) {}
 
@@ -25,6 +28,11 @@ export class WorkspaceController {
   @Get('')
   getAll(@GetPagination() paginationOptions: PaginationDto) {
     return this.workspaceService.readAll(paginationOptions);
+  }
+
+  @Get('slug')
+  getBySlug(@Query('value') value: string) {
+    return this.workspaceService.readBySlug({ slug: value });
   }
 
   @Get(':id')

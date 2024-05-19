@@ -1,8 +1,9 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { AccountProvider, WorkspaceRole } from '@prisma/client';
+import { AccountProvider } from '@prisma/client';
 import * as argon from 'argon2';
+// import lodash from 'lodash';
 import { DatabaseService } from 'src/database/database.service';
 import { ApiError } from 'src/types';
 
@@ -39,16 +40,17 @@ export class AuthService {
               password: hash,
             },
           },
-          workspaces: {
-            create: {
-              workspace: {
-                create: {
-                  name: `${data.fullName}'s workspace`,
-                },
-              },
-              roles: [WorkspaceRole.STUDENT],
-            },
-          },
+          // workspaces: {
+          //   create: {
+          //     workspace: {
+          //       create: {
+          //         name: `${data.fullName}'s workspace`,
+          //         slug: lodash.kebabCase(`${data.fullName}'s workspace`),
+          //       },
+          //     },
+          //     roles: [WorkspaceRole.STUDENT],
+          //   },
+          // },
         },
         include: {
           accounts: true,
@@ -74,6 +76,7 @@ export class AuthService {
       });
 
       if (!account) throw new ForbiddenException(ApiError.ACCOUNT_NOT_FOUND);
+      // if (!account) throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
 
       const isPasswordCorrect = await argon.verify(
         account.password,

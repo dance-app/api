@@ -44,6 +44,7 @@ CREATE TABLE "workspaces" (
     "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ(3) NOT NULL,
     "name" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
 
     CONSTRAINT "workspaces_pkey" PRIMARY KEY ("id")
 );
@@ -97,6 +98,9 @@ CREATE TABLE "attendees" (
 
     CONSTRAINT "attendees_pkey" PRIMARY KEY ("userId","eventId")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "workspaces_slug_key" ON "workspaces"("slug");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "workspaceConfig_workspaceId_key" ON "workspaceConfig"("workspaceId");

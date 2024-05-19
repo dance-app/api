@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Workspace } from '@prisma/client';
 import { DatabaseService } from 'src/database/database.service';
+import { ErrorService } from 'src/error/error.service';
 import { PaginationDto } from 'src/pagination/dto';
 import { PaginationService } from 'src/pagination/pagination.service';
 
@@ -9,22 +10,27 @@ export class WorkspaceService {
   constructor(
     private database: DatabaseService,
     private pagination: PaginationService,
+    private error: ErrorService,
   ) {}
 
   async readAll(paginationOptions: PaginationDto) {
-    const totalCount = await this.database.workspace.count();
-    const data = await this.database.workspace.findMany({
-      ...this.pagination.extractPaginationOptions(paginationOptions),
-    });
+    try {
+      const totalCount = await this.database.workspace.count();
+      const data = await this.database.workspace.findMany({
+        ...this.pagination.extractPaginationOptions(paginationOptions),
+      });
 
-    return {
-      meta: {
-        totalCount,
-        count: data.length,
-        ...paginationOptions,
-      },
-      data,
-    };
+      return {
+        meta: {
+          totalCount,
+          count: data.length,
+          ...paginationOptions,
+        },
+        data,
+      };
+    } catch (error) {
+      return this.error.handler(error);
+    }
   }
 
   async readById(payload: Pick<Workspace, 'id'>) {
@@ -37,16 +43,30 @@ export class WorkspaceService {
         data,
       };
     } catch (error) {
-      console.log('Error', error);
-      return null;
+      return this.error.handler(error);
     }
   }
 
-  async create(payload: Pick<Workspace, 'name'>) {
+  async readBySlug(payload: Pick<Workspace, 'slug'>) {
+    try {
+      const data = await this.database.workspace.findFirst({
+        where: { slug: payload.slug },
+      });
+
+      return {
+        data,
+      };
+    } catch (error) {
+      return this.error.handler(error);
+    }
+  }
+
+  async create(payload: Pick<Workspace, 'name' | 'slug'>) {
     try {
       const data = await this.database.workspace.create({
         data: {
           name: payload.name,
+          slug: payload.slug,
         },
       });
 
@@ -55,8 +75,7 @@ export class WorkspaceService {
         data,
       };
     } catch (error) {
-      console.log('Error', error);
-      return null;
+      return this.error.handler(error);
     }
   }
 
@@ -74,8 +93,7 @@ export class WorkspaceService {
         data,
       };
     } catch (error) {
-      console.log('Error', error);
-      return null;
+      return this.error.handler(error);
     }
   }
 
@@ -90,8 +108,7 @@ export class WorkspaceService {
         data,
       };
     } catch (error) {
-      console.log('Error', error);
-      return null;
+      return this.error.handler(error);
     }
   }
 }

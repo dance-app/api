@@ -51,6 +51,7 @@ model Workspace {
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   name String
+  slug String @unique
 
   configuration WorkspaceConfig?
   members Member[]
