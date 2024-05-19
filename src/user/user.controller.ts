@@ -29,6 +29,7 @@ export class UserController {
   }
 
   @Post('')
+  @GetAllowedRoles([], true)
   create(@Body() data: UserDto) {
     return this.userService.create(data);
   }
@@ -49,6 +50,15 @@ export class UserController {
   @GetAllowedRoles([], true)
   updateUser(@Param('id') id: string, @Body() data: UserDto) {
     return this.userService.update(Number(id), data);
+  }
+
+  @Patch(':id/link-workspace')
+  @GetAllowedRoles([], true)
+  linkWorkspace(
+    @Param('id') id: string,
+    @Body() data: { workspaceId: number },
+  ) {
+    return this.userService.linkWorkspace(Number(id), data.workspaceId);
   }
 
   @Delete(':id')

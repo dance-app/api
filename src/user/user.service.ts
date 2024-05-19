@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { User, WorkspaceRole } from '@prisma/client';
 import { DatabaseService } from 'src/database/database.service';
 import { ErrorService } from 'src/error/error.service';
 import { PaginationDto } from 'src/pagination/dto';
@@ -91,6 +91,41 @@ export class UserService {
         data: deletedUser,
       };
     } catch (error) {
+      return this.error.handler(error);
+    }
+  }
+
+  async linkWorkspace(id: number, workspaceId: number) {
+    try {
+      const updatedUser = await this.database.user.update({
+        where: { id },
+        data: {
+          workspaces: {
+            connectOrCreate: {
+              create: {
+                workspaceId,
+                roles: [WorkspaceRole.STUDENT],
+              },
+              where: {
+                userId_workspaceId: {
+                  userId: id,
+                  workspaceId,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return {
+        message: 'User linked to workspace',
+        data: {
+          workspaceId,
+          userId: updatedUser.id,
+        },
+      };
+    } catch (error) {
+      console.log('error', error);
       return this.error.handler(error);
     }
   }
