@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { User } from '@prisma/client';
 import { DatabaseService } from 'src/database/database.service';
+import { ErrorService } from 'src/error/error.service';
 import { PaginationDto } from 'src/pagination/dto';
 import { PaginationService } from 'src/pagination/pagination.service';
 
@@ -9,22 +10,27 @@ export class UserService {
   constructor(
     private database: DatabaseService,
     private pagination: PaginationService,
+    private error: ErrorService,
   ) {}
 
   async readAll(paginationOptions: PaginationDto) {
-    const userCount = await this.database.user.count();
-    const users = await this.database.user.findMany({
-      ...this.pagination.extractPaginationOptions(paginationOptions),
-    });
+    try {
+      const userCount = await this.database.user.count();
+      const users = await this.database.user.findMany({
+        ...this.pagination.extractPaginationOptions(paginationOptions),
+      });
 
-    return {
-      meta: {
-        totalCount: userCount,
-        count: users.length,
-        ...paginationOptions,
-      },
-      data: users,
-    };
+      return {
+        meta: {
+          totalCount: userCount,
+          count: users.length,
+          ...paginationOptions,
+        },
+        data: users,
+      };
+    } catch (error) {
+      return this.error.handler(error);
+    }
   }
 
   async readById(data: Pick<User, 'id'>) {
@@ -37,8 +43,7 @@ export class UserService {
         data: user,
       };
     } catch (error) {
-      console.log('Error', error);
-      return null;
+      return this.error.handler(error);
     }
   }
 
@@ -53,8 +58,7 @@ export class UserService {
         data: newUser,
       };
     } catch (error) {
-      console.log('Error', error);
-      return null;
+      return this.error.handler(error);
     }
   }
 
@@ -72,8 +76,7 @@ export class UserService {
         data: updatedUser,
       };
     } catch (error) {
-      console.log('Error', error);
-      return null;
+      return this.error.handler(error);
     }
   }
 
@@ -88,8 +91,7 @@ export class UserService {
         data: deletedUser,
       };
     } catch (error) {
-      console.log('Error', error);
-      return null;
+      return this.error.handler(error);
     }
   }
 }

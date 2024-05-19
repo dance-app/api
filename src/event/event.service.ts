@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
+import { ErrorService } from 'src/error/error.service';
 import { PaginationDto } from 'src/pagination/dto';
 import { PaginationService } from 'src/pagination/pagination.service';
 
@@ -10,6 +11,7 @@ export class EventService {
   constructor(
     private database: DatabaseService,
     private pagination: PaginationService,
+    private error: ErrorService,
   ) {}
 
   async readEvents(paginationOptions: PaginationDto) {
@@ -22,7 +24,7 @@ export class EventService {
         data: events,
       };
     } catch (error) {
-      return error.response;
+      return this.error.handler(error);
     }
   }
 
@@ -46,7 +48,7 @@ export class EventService {
         data: null,
       };
     } catch (error) {
-      return error.response;
+      return this.error.handler(error);
     }
     // return {
     //   statusCode: 200,

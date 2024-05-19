@@ -5,6 +5,7 @@ import { AccountProvider } from '@prisma/client';
 import * as argon from 'argon2';
 // import lodash from 'lodash';
 import { DatabaseService } from 'src/database/database.service';
+import { ErrorService } from 'src/error/error.service';
 import { ApiError } from 'src/types';
 
 import { SignInDto, SignUpDto } from './dto';
@@ -15,6 +16,7 @@ export class AuthService {
     private database: DatabaseService,
     private jwt: JwtService,
     private config: ConfigService,
+    private error: ErrorService,
   ) {}
 
   async signUp(data: SignUpDto) {
@@ -62,7 +64,7 @@ export class AuthService {
         data: user,
       };
     } catch (error) {
-      return error.response;
+      return this.error.handler(error);
     }
   }
 
@@ -103,7 +105,7 @@ export class AuthService {
         },
       };
     } catch (error) {
-      return error.response;
+      return this.error.handler(error);
     }
   }
 
