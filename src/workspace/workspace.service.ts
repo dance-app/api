@@ -4,6 +4,7 @@ import { DatabaseService } from 'src/database/database.service';
 import { ErrorService } from 'src/error/error.service';
 import { PaginationDto } from 'src/pagination/dto';
 import { PaginationService } from 'src/pagination/pagination.service';
+import { UserWithAccount } from 'src/user/user.types';
 
 @Injectable({})
 export class WorkspaceService {
@@ -59,6 +60,19 @@ export class WorkspaceService {
     } catch (error) {
       return this.error.handler(error);
     }
+  }
+
+  async readMyWorkspace(payload: { user: UserWithAccount }) {
+    const result = await this.database.workspace.findMany({
+      where: {
+        members: {
+          some: {
+            userId: payload.user.id,
+          },
+        },
+      },
+    });
+    return result;
   }
 
   async create(payload: Pick<Workspace, 'name' | 'slug'>) {

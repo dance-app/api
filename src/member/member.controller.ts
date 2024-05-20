@@ -1,8 +1,9 @@
 import { Controller, Get, Post, UseGuards, Body, Param } from '@nestjs/common';
 import { Member, Workspace } from '@prisma/client';
-import { JwtGuard, RolesGuard } from 'src/auth/guard';
+import { JwtGuard } from 'src/auth/guard';
 import { GetPagination } from 'src/pagination/decorator';
 import { PaginationDto } from 'src/pagination/dto';
+import { RolesGuard } from 'src/role/guard/roles.guard';
 
 import { MemberService } from './member.service';
 

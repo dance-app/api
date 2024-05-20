@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
-import { AccountProvider } from '@prisma/client';
+import { AccountProvider, User, Account } from '@prisma/client';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { DatabaseService } from 'src/database/database.service';
-import { JwtStrategyPayload, UserWithAccount } from 'src/types';
+import { UserWithAccount } from 'src/user/user.types';
 
 export const STRATEGY_NAME = 'jwt';
 
@@ -25,7 +25,12 @@ export class JwTStrategy extends PassportStrategy(Strategy, STRATEGY_NAME) {
   /**
    * @returns {UserAccount | Null} Returning null with provoke a 401 Unauthorized error
    */
-  async validate(payload: JwtStrategyPayload): Promise<UserWithAccount | null> {
+  async validate(payload: {
+    sub: User['id'];
+    email: Account['email'];
+    iat: number;
+    exp: number;
+  }): Promise<UserWithAccount | null> {
     try {
       const account = await this.database.account.findFirst({
         where: {

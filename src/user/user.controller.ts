@@ -8,14 +8,16 @@ import {
   Param,
   Delete,
 } from '@nestjs/common';
-import { GetAuthUserAccount, GetAllowedRoles } from 'src/auth/decorator';
-import { JwtGuard, RolesGuard } from 'src/auth/guard';
+import { GetAuthUser } from 'src/auth/decorator';
+import { JwtGuard } from 'src/auth/guard';
 import { GetPagination } from 'src/pagination/decorator';
 import { PaginationDto } from 'src/pagination/dto';
-import { UserWithAccount } from 'src/types';
+import { Roles } from 'src/role/decorator/roles.decorator';
+import { RolesGuard } from 'src/role/guard/roles.guard';
 
 import { UserDto } from './dto';
 import { UserService } from './user.service';
+import { UserWithAccount } from './user.types';
 
 @UseGuards(JwtGuard, RolesGuard)
 @Controller('users')
@@ -24,36 +26,39 @@ export class UserController {
 
   @UseGuards(JwtGuard)
   @Get('me')
-  getMe(@GetAuthUserAccount() authAccount: UserWithAccount) {
-    return authAccount;
+  getMe(@GetAuthUser() user: UserWithAccount) {
+    return user;
   }
 
   @Post('')
-  @GetAllowedRoles([], true)
+  @Roles([], true)
   create(@Body() data: UserDto) {
     return this.userService.create(data);
   }
 
   @Get('')
-  @GetAllowedRoles([], true)
+  @Roles([], true)
+  // @UseGuards(RolesGuard)
   getUsers(@GetPagination() paginationOptions: PaginationDto) {
-    return this.userService.readAll(paginationOptions);
+    console.log('ok');
+    return [];
+    // return this.userService.readAll(paginationOptions);
   }
 
   @Get(':id')
-  @GetAllowedRoles([], true)
+  @Roles([], true)
   getUser(@Param('id') id: string) {
     return this.userService.readById({ id: Number(id) });
   }
 
   @Patch(':id')
-  @GetAllowedRoles([], true)
+  @Roles([], true)
   updateUser(@Param('id') id: string, @Body() data: UserDto) {
     return this.userService.update(Number(id), data);
   }
 
   @Patch(':id/link-workspace')
-  @GetAllowedRoles([], true)
+  @Roles([], true)
   linkWorkspace(
     @Param('id') id: string,
     @Body() data: { workspaceId: number },
@@ -62,7 +67,7 @@ export class UserController {
   }
 
   @Delete(':id')
-  @GetAllowedRoles([], true)
+  @Roles([], true)
   delete(@Param('id') id: string) {
     return this.userService.delete(Number(id));
   }

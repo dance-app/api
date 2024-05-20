@@ -6,7 +6,7 @@ import * as argon from 'argon2';
 // import lodash from 'lodash';
 import { DatabaseService } from 'src/database/database.service';
 import { ErrorService } from 'src/error/error.service';
-import { ApiError } from 'src/types';
+import { ApiError } from 'src/error/error.types';
 
 import { SignInDto, SignUpDto } from './dto';
 

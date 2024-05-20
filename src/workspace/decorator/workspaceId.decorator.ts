@@ -10,8 +10,6 @@ export const GetWorkspaceId = createParamDecorator(
 
     const workspaceId = parseInt(request.query.id, 10);
 
-    return {
-      workspaceId,
-    };
+    return workspaceId;
   },
 );
