@@ -24,6 +24,13 @@ export class MemberService {
 
       const members = await this.database.member.findMany({
         where: { workspaceId },
+        select: {
+          user: {
+            include: {
+              accounts: {},
+            },
+          },
+        },
         ...this.pagination.extractPaginationOptions(paginationOptions),
       });
 
@@ -33,7 +40,7 @@ export class MemberService {
           count: members.length,
           ...paginationOptions,
         },
-        data: members,
+        data: members.map((m) => m.user),
       };
     } catch (error) {
       return this.error.handler(error);

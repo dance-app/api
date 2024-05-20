@@ -1,4 +1,13 @@
-import { Controller, Get, Post, UseGuards, Body, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  UseGuards,
+  Body,
+  Param,
+  Query,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { Member, Workspace } from '@prisma/client';
 import { JwtGuard } from 'src/auth/guard';
 import { GetPagination } from 'src/pagination/decorator';
@@ -19,10 +28,10 @@ export class MemberController {
 
   @Get('')
   readAll(
-    @Body() data: { workspaceId: Workspace['id'] },
+    @Query('workspaceId', ParseIntPipe) workspaceId: number,
     @GetPagination() paginationOptions: PaginationDto,
   ) {
-    return this.memberService.readAll(data.workspaceId, paginationOptions);
+    return this.memberService.readAll(workspaceId, paginationOptions);
   }
 
   @Get(':id')
