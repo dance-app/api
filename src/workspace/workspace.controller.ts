@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   UseGuards,
-  Query,
 } from '@nestjs/common';
 import { GetAuthUser } from 'src/auth/decorator';
 import { JwtGuard } from 'src/auth/guard';
@@ -34,12 +33,12 @@ export class WorkspaceController {
 
   @Get('mine')
   getMyWorkspace(@GetAuthUser() user: UserWithAccount) {
-    return this.workspaceService.readMyWorkspace({ user });
+    return this.workspaceService.readMyWorkspaces({ user });
   }
 
-  @Get('slug')
-  getBySlug(@Query('value') value: string) {
-    return this.workspaceService.readBySlug({ slug: value });
+  @Get('slug/:slug')
+  getBySlug(@Param('slug') slug: string) {
+    return this.workspaceService.readBySlug({ slug });
   }
 
   @Get(':id')

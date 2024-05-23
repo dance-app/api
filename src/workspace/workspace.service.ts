@@ -62,7 +62,7 @@ export class WorkspaceService {
     }
   }
 
-  async readMyWorkspace(payload: { user: UserWithAccount }) {
+  async readMyWorkspaces(payload: { user: UserWithAccount }) {
     const result = await this.database.workspace.findMany({
       where: {
         members: {
@@ -72,7 +72,9 @@ export class WorkspaceService {
         },
       },
     });
-    return result;
+    return {
+      data: result,
+    };
   }
 
   async create(payload: Pick<Workspace, 'name' | 'slug'>) {
