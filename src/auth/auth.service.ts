@@ -3,10 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AccountProvider } from '@prisma/client';
 import * as argon from 'argon2';
-// import lodash from 'lodash';
 import { DatabaseService } from 'src/database/database.service';
 import { ErrorService } from 'src/error/error.service';
 import { ApiError } from 'src/error/error.types';
+import { UserService } from 'src/user/user.service';
 
 import { SignInDto, SignUpDto } from './dto';
 
@@ -17,55 +17,34 @@ export class AuthService {
     private jwt: JwtService,
     private config: ConfigService,
     private error: ErrorService,
+    private userService: UserService,
   ) {}
 
   async signUp(data: SignUpDto) {
-    try {
-      const existingAccount = await this.database.account.findFirst({
-        where: {
-          provider: AccountProvider.LOCAL,
-          email: data.email,
-        },
-      });
-
-      if (existingAccount)
-        throw new ForbiddenException(ApiError.ACCOUNT_ALREADY_EXISTS);
-
-      const hash = await argon.hash(data.password);
-      const user = await this.database.user.create({
-        data: {
-          fullName: data.fullName,
-          accounts: {
-            create: {
-              provider: AccountProvider.LOCAL,
-              email: data.email,
-              password: hash,
-            },
+    const existingAccount = await this.database.user.findFirst({
+      where: {
+        accounts: {
+          some: {
+            provider: AccountProvider.LOCAL,
+            email: data.email,
           },
-          // workspaces: {
-          //   create: {
-          //     workspace: {
-          //       create: {
-          //         name: `${data.fullName}'s workspace`,
-          //         slug: lodash.kebabCase(`${data.fullName}'s workspace`),
-          //       },
-          //     },
-          //     roles: [WorkspaceRole.STUDENT],
-          //   },
-          // },
         },
-        include: {
-          accounts: true,
-        },
-      });
+      },
+    });
 
-      return {
-        message: 'Sign up successfully',
-        data: user,
-      };
-    } catch (error) {
-      return this.error.handler(error);
-    }
+    if (existingAccount)
+      throw new ForbiddenException(ApiError.ACCOUNT_ALREADY_EXISTS);
+
+    const user = await this.userService.create({
+      email: data.email,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      password: data.password,
+      isSuperAdmin: false,
+      isVerified: false,
+    });
+
+    return user;
   }
 
   async signIn(data: SignInDto) {

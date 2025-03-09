@@ -4,7 +4,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 export class ErrorService {
   constructor() {}
 
-  handler(error: any) {
+  handler(error: any): undefined {
     /**
      * @see https://www.prisma.io/docs/orm/reference/error-reference#p2002
      */

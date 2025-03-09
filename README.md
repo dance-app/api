@@ -14,24 +14,18 @@ $ pnpm install
 
 ### Start the database
 
+This will start the local database with docker
+
 ```bash
-yarn docker:db:up
+pnpm run db:dev:start
 ```
 
 ### Debug database
 
-1. With [PgAdmin](https://www.pgadmin.org/):
+With Prisma studio
 
 ```bash
-yarn docker:pg-admin:up
-```
-
-You can see the DB at [http://localhost:5050/](http://localhost:5050/)
-
-2. With Prisma studio
-
-```bash
-yarn db:dev:debug
+pnpm run db:dev:debug
 ```
 
 You can see the DB at [http://localhost:5555/](http://localhost:5555/)

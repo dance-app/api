@@ -19,13 +19,14 @@ model User {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  fullName String?
+  firstName String?
+  lastName String?
   token String?
   isSuperAdmin Boolean?
 
   accounts Account[]
   workspaces Member[]
-  attendences Attendee[]
+  attendances Attendee[]
 
   @@map("users")
 }
@@ -37,7 +38,8 @@ model Account {
 
   provider AccountProvider
   email String
-  password String
+  password String?
+  isEmailVerified Boolean?
 
   user User @relation(fields: [userId], references: [id])
   userId Int
@@ -157,4 +159,9 @@ enum WorkspaceRole {
   OWNER
   TEACHER
   STUDENT
+}
+
+enum MemberStatus {
+  ACIVTE
+  DESACTIVATED
 }

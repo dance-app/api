@@ -127,4 +127,29 @@ export class WorkspaceService {
       return this.error.handler(error);
     }
   }
+
+  async canAccessWorkspace(payload: { user: UserWithAccount; slug: string }) {
+    const workspace = await this.database.workspace.findFirst({
+      where: {
+        slug: {
+          equals: payload.slug,
+        },
+      },
+    });
+
+    if (!workspace) return false;
+
+    const result = await this.database.workspace.findFirst({
+      where: {
+        members: {
+          some: {
+            userId: payload.user.id,
+            workspaceId: workspace.id,
+          },
+        },
+      },
+    });
+
+    return !!result.id;
+  }
 }

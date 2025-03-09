@@ -20,5 +20,8 @@ export class SignUpDto {
   password: string;
 
   @IsString()
-  fullName: string;
+  firstName: string;
+
+  @IsString()
+  lastName: string;
 }

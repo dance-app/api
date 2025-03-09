@@ -20,7 +20,6 @@
     "db:test:restart": "yarn db:test:kill && yarn db:test:start && sleep 1 && yarn db:test:deploy",
     "db:test:start": "docker compose up test-db -d",
     "docker:db:up": "docker-compose up -d dev-db",
-    "docker:pg-admin:up": "docker-compose up -d pgadmin",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "start:debug": "nest start --debug --watch",
@@ -46,6 +45,7 @@
     "class-validator": "^0.14.1",
     "lodash": "^4.17.21",
     "passport-jwt": "^4.0.1",
+    "prisma": "^6.4.1",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1"
   },

@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { User, WorkspaceRole } from '@prisma/client';
+import { Account, AccountProvider, User, WorkspaceRole } from '@prisma/client';
+import * as argon from 'argon2';
 import { DatabaseService } from 'src/database/database.service';
 import { ErrorService } from 'src/error/error.service';
 import { PaginationDto } from 'src/pagination/dto';
 import { PaginationService } from 'src/pagination/pagination.service';
+
+import { CreateUserDto, UpdateUserDto } from './dto';
 
 @Injectable({})
 export class UserService {
@@ -47,37 +50,67 @@ export class UserService {
     }
   }
 
-  async create(data: Pick<User, 'fullName'>) {
-    try {
-      const newUser = await this.database.user.create({
-        data: { fullName: data.fullName },
-      });
+  async create(data: CreateUserDto) {
+    const newUser = await this.database.user.create({
+      data: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        isSuperAdmin: data.isSuperAdmin || false,
+        accounts: {
+          create: {
+            provider: AccountProvider.LOCAL,
+            email: data.email,
+            password: await argon.hash(data.password),
+            isEmailVerified: data.isVerified || false,
+          },
+        },
+      },
+      include: {
+        accounts: true,
+      },
+    });
 
-      return {
-        message: 'User created',
-        data: newUser,
-      };
-    } catch (error) {
-      return this.error.handler(error);
-    }
+    return newUser;
   }
 
-  async update(id: number, data: Pick<User, 'fullName'>) {
-    try {
-      const updatedUser = await this.database.user.update({
-        where: { id },
+  async update(id: number, data: UpdateUserDto) {
+    const updatedUser = await this.database.user.update({
+      where: { id },
+      data: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        isSuperAdmin: data.isSuperAdmin,
+      },
+      include: { accounts: true },
+    });
+
+    let updatedAccount: Account | undefined;
+
+    if (data.password || data.isVerified) {
+      const updatedUserLocalAccount = updatedUser.accounts.find(
+        (a) => a.provider === AccountProvider.LOCAL,
+      );
+      if (!updatedUserLocalAccount) throw new Error('User account not found');
+
+      const newPassword = data.password
+        ? await argon.hash(data.password)
+        : null;
+
+      updatedAccount = await this.database.account.update({
+        where: {
+          id: updatedUserLocalAccount.id,
+        },
         data: {
-          fullName: data.fullName,
+          ...(newPassword ? { password: newPassword } : {}),
+          ...(data.isVerified ? { isEmailVerified: data.isVerified } : {}),
         },
       });
-
-      return {
-        message: 'User updated',
-        data: updatedUser,
-      };
-    } catch (error) {
-      return this.error.handler(error);
     }
+
+    return {
+      user: updatedUser,
+      account: updatedAccount,
+    };
   }
 
   async delete(id: number) {
@@ -95,10 +128,10 @@ export class UserService {
     }
   }
 
-  async linkWorkspace(id: number, workspaceId: number) {
+  async linkWorkspace(userId: number, workspaceId: number) {
     try {
       const updatedUser = await this.database.user.update({
-        where: { id },
+        where: { id: userId },
         data: {
           workspaces: {
             connectOrCreate: {
@@ -108,7 +141,7 @@ export class UserService {
               },
               where: {
                 userId_workspaceId: {
-                  userId: id,
+                  userId,
                   workspaceId,
                 },
               },
