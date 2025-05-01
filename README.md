@@ -10,7 +10,7 @@ REST API build with [Nest](https://github.com/nestjs/nest).
 $ pnpm install
 ```
 
-## Running the app
+## Running the database
 
 ### Start the database
 
@@ -29,6 +29,16 @@ pnpm run db:dev:debug
 ```
 
 You can see the DB at [http://localhost:5555/](http://localhost:5555/)
+
+### Reset the database
+
+In order to completely restart from fresh data
+
+```bash
+pnpm run db:dev:reset
+```
+
+## Running the app
 
 ### Start the server
 

@@ -8,12 +8,14 @@ import {
   Body,
   // Param,
 } from '@nestjs/common';
-import { JwtGuard } from 'src/auth/guard';
-import { GetPagination } from 'src/pagination/decorator';
-import { PaginationDto } from 'src/pagination/dto';
 
 import { CreateEventDto } from './dto';
 import { EventService } from './event.service';
+
+import { JwtGuard } from '@/auth/guard';
+import { GetPagination } from '@/pagination/decorator';
+import { PaginationDto } from '@/pagination/dto';
+
 @Controller('events')
 export class EventController {
   constructor(private eventService: EventService) {}

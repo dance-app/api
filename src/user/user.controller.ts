@@ -8,12 +8,12 @@ import {
   Param,
   Delete,
 } from '@nestjs/common';
-import { GetAuthUser } from 'src/auth/decorator';
-import { JwtGuard } from 'src/auth/guard';
-import { GetPagination } from 'src/pagination/decorator';
-import { PaginationDto } from 'src/pagination/dto';
-import { Roles } from 'src/role/decorator/roles.decorator';
-import { RolesGuard } from 'src/role/guard/roles.guard';
+import { GetAuthUser } from '@/auth/decorator';
+import { JwtGuard } from '@/auth/guard';
+import { GetPagination } from '@/pagination/decorator';
+import { PaginationDto } from '@/pagination/dto';
+import { Roles } from '@/role/decorator/roles.decorator';
+import { RolesGuard } from '@/role/guard/roles.guard';
 
 import { UserDto } from './dto';
 import { UserService } from './user.service';
@@ -30,11 +30,11 @@ export class UserController {
     return user;
   }
 
-  @Post('')
-  @Roles([], true)
-  create(@Body() data: UserDto) {
-    return this.userService.create(data);
-  }
+  // @Post('')
+  // @Roles([], true)
+  // create(@Body() data: UserDto) {
+  //   return this.userService.create(data);
+  // }
 
   @Get('')
   @Roles([], true)
@@ -51,11 +51,11 @@ export class UserController {
     return this.userService.readById({ id: Number(id) });
   }
 
-  @Patch(':id')
-  @Roles([], true)
-  updateUser(@Param('id') id: string, @Body() data: UserDto) {
-    return this.userService.update(Number(id), data);
-  }
+  // @Patch(':id')
+  // @Roles([], true)
+  // updateUser(@Param('id') id: string, @Body() data: UserDto) {
+  //   return this.userService.update(Number(id), data);
+  // }
 
   @Patch(':id/link-workspace')
   @Roles([], true)

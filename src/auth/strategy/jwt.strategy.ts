@@ -3,8 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { AccountProvider, User, Account } from '@prisma/client';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { DatabaseService } from 'src/database/database.service';
-import { UserWithAccount } from 'src/user/user.types';
+import { DatabaseService } from '@/database/database.service';
+import { UserWithAccount } from '@/user/user.types';
 
 export const STRATEGY_NAME = 'jwt';
 

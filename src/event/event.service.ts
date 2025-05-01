@@ -1,31 +1,26 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from 'src/database/database.service';
-import { ErrorService } from 'src/error/error.service';
-import { PaginationDto } from 'src/pagination/dto';
-import { PaginationService } from 'src/pagination/pagination.service';
 
 import { CreateEventDto } from './dto';
+
+import { DatabaseService } from '@/database/database.service';
+import { PaginationDto } from '@/pagination/dto';
+import { PaginationService } from '@/pagination/pagination.service';
 
 @Injectable({})
 export class EventService {
   constructor(
     private database: DatabaseService,
     private pagination: PaginationService,
-    private error: ErrorService,
   ) {}
 
   async readEvents(paginationOptions: PaginationDto) {
-    try {
-      const events = await this.database.event.findMany({
-        ...this.pagination.extractPaginationOptions(paginationOptions),
-      });
-      return {
-        statusCode: 200,
-        data: events,
-      };
-    } catch (error) {
-      return this.error.handler(error);
-    }
+    const events = await this.database.event.findMany({
+      ...this.pagination.extractPaginationOptions(paginationOptions),
+    });
+    return {
+      statusCode: 200,
+      data: events,
+    };
   }
 
   readEvent(eventId: string) {
@@ -38,23 +33,15 @@ export class EventService {
 
   async createEvent(data: CreateEventDto) {
     console.log('eventDto', data);
-    try {
-      // const newUser = await this.database.event.create({
-      //   data: { fullName: data.fullName },
-      // });
 
-      return {
-        message: 'User created',
-        data: null,
-      };
-    } catch (error) {
-      return this.error.handler(error);
-    }
-    // return {
-    //   statusCode: 200,
-    //   data: getMockEvents()[0],
-    //   message: ['event created'],
-    // };
+    // const newUser = await this.database.event.create({
+    //   data: { fullName: data.fullName },
+    // });
+
+    return {
+      message: 'User created',
+      data: null,
+    };
   }
 
   async updateEvent(eventId: string, eventDto: CreateEventDto) {

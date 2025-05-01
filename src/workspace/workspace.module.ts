@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { MemberService } from 'src/member/member.service';
-import { UserService } from 'src/user/user.service';
+import { MemberService } from '@/member/member.service';
+import { UserService } from '@/user/user.service';
 
 import { WorkspaceController } from './workspace.controller';
 import { WorkspaceService } from './workspace.service';

@@ -5,7 +5,7 @@ CREATE TYPE "AccountProvider" AS ENUM ('LOCAL', 'GOOGLE', 'FACEBOOK');
 CREATE TYPE "WeekStart" AS ENUM ('SUNDAY', 'MONDAY', 'SATURDAY');
 
 -- CreateEnum
-CREATE TYPE "AttendenceType" AS ENUM ('VALIDATE', 'WAITING');
+CREATE TYPE "AttendanceType" AS ENUM ('VALIDATE', 'WAITING');
 
 -- CreateEnum
 CREATE TYPE "DanceRole" AS ENUM ('LEADER', 'FOLLOWER');
@@ -13,12 +13,16 @@ CREATE TYPE "DanceRole" AS ENUM ('LEADER', 'FOLLOWER');
 -- CreateEnum
 CREATE TYPE "WorkspaceRole" AS ENUM ('OWNER', 'TEACHER', 'STUDENT');
 
+-- CreateEnum
+CREATE TYPE "MemberStatus" AS ENUM ('ACTIVE', 'DEACTIVATED');
+
 -- CreateTable
 CREATE TABLE "users" (
     "id" SERIAL NOT NULL,
     "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ(3) NOT NULL,
-    "fullName" TEXT,
+    "firstName" TEXT,
+    "lastName" TEXT,
     "token" TEXT,
     "isSuperAdmin" BOOLEAN,
 
@@ -32,7 +36,8 @@ CREATE TABLE "accounts" (
     "updatedAt" TIMESTAMPTZ(3) NOT NULL,
     "provider" "AccountProvider" NOT NULL,
     "email" TEXT NOT NULL,
-    "password" TEXT NOT NULL,
+    "password" TEXT,
+    "isEmailVerified" BOOLEAN,
     "userId" INTEGER NOT NULL,
 
     CONSTRAINT "accounts_pkey" PRIMARY KEY ("id")
@@ -92,7 +97,7 @@ CREATE TABLE "events" (
 -- CreateTable
 CREATE TABLE "attendees" (
     "role" "DanceRole" NOT NULL,
-    "type" "AttendenceType" NOT NULL,
+    "type" "AttendanceType" NOT NULL,
     "userId" INTEGER NOT NULL,
     "eventId" INTEGER NOT NULL,
 

@@ -3,12 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AccountProvider } from '@prisma/client';
 import * as argon from 'argon2';
-import { DatabaseService } from 'src/database/database.service';
-import { ErrorService } from 'src/error/error.service';
-import { ApiError } from 'src/error/error.types';
-import { UserService } from 'src/user/user.service';
 
 import { SignInDto, SignUpDto } from './dto';
+
+import { DatabaseService } from '@/database/database.service';
+import { UserService } from '@/user/user.service';
 
 @Injectable({})
 export class AuthService {
@@ -16,7 +15,6 @@ export class AuthService {
     private database: DatabaseService,
     private jwt: JwtService,
     private config: ConfigService,
-    private error: ErrorService,
     private userService: UserService,
   ) {}
 
@@ -25,15 +23,14 @@ export class AuthService {
       where: {
         accounts: {
           some: {
-            provider: AccountProvider.LOCAL,
+            // provider: AccountProvider.LOCAL,
             email: data.email,
           },
         },
       },
     });
 
-    if (existingAccount)
-      throw new ForbiddenException(ApiError.ACCOUNT_ALREADY_EXISTS);
+    if (!!existingAccount) throw new ForbiddenException('Email already exists');
 
     const user = await this.userService.create({
       email: data.email,
@@ -48,44 +45,34 @@ export class AuthService {
   }
 
   async signIn(data: SignInDto) {
-    try {
-      const account = await this.database.account.findFirst({
-        where: {
-          provider: AccountProvider.LOCAL,
-          email: data.email,
-        },
-      });
+    const account = await this.database.account.findFirst({
+      where: {
+        provider: AccountProvider.LOCAL,
+        email: data.email,
+      },
+    });
 
-      if (!account) throw new ForbiddenException(ApiError.ACCOUNT_NOT_FOUND);
-      // if (!account) throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    if (!account) throw new ForbiddenException('Credentials not correct');
 
-      const isPasswordCorrect = await argon.verify(
-        account.password,
-        data.password,
-      );
+    const isPasswordCorrect = await argon.verify(
+      account.password,
+      data.password,
+    );
 
-      if (!isPasswordCorrect)
-        throw new ForbiddenException('Credentials not correct');
+    if (!isPasswordCorrect)
+      throw new ForbiddenException('Credentials not correct');
 
-      const signedToken = await this.signToken(account.userId, account.email);
-      await this.database.user.update({
-        where: {
-          id: account.userId,
-        },
-        data: {
-          token: signedToken,
-        },
-      });
+    const signedToken = await this.signToken(account.userId, account.email);
+    await this.database.user.update({
+      where: {
+        id: account.userId,
+      },
+      data: {
+        token: signedToken,
+      },
+    });
 
-      return {
-        data: {
-          message: 'Successfully logged in',
-          token: signedToken,
-        },
-      };
-    } catch (error) {
-      return this.error.handler(error);
-    }
+    return signedToken;
   }
 
   signToken(userId: number, email: string) {

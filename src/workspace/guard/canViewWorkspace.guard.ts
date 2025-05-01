@@ -1,5 +1,5 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
-import { UserWithAccount } from 'src/user/user.types';
+import { UserWithAccount } from '@/user/user.types';
 
 import { WorkspaceService } from '../workspace.service';
 

@@ -1,65 +1,52 @@
 import { Injectable } from '@nestjs/common';
 import { Workspace } from '@prisma/client';
-import { DatabaseService } from 'src/database/database.service';
-import { ErrorService } from 'src/error/error.service';
-import { PaginationDto } from 'src/pagination/dto';
-import { PaginationService } from 'src/pagination/pagination.service';
-import { UserWithAccount } from 'src/user/user.types';
+
+import { DatabaseService } from '@/database/database.service';
+import { PaginationDto } from '@/pagination/dto';
+import { PaginationService } from '@/pagination/pagination.service';
+import { UserWithAccount } from '@/user/user.types';
 
 @Injectable({})
 export class WorkspaceService {
   constructor(
     private database: DatabaseService,
     private pagination: PaginationService,
-    private error: ErrorService,
   ) {}
 
   async readAll(paginationOptions: PaginationDto) {
-    try {
-      const totalCount = await this.database.workspace.count();
-      const data = await this.database.workspace.findMany({
-        ...this.pagination.extractPaginationOptions(paginationOptions),
-      });
+    const totalCount = await this.database.workspace.count();
+    const data = await this.database.workspace.findMany({
+      ...this.pagination.extractPaginationOptions(paginationOptions),
+    });
 
-      return {
-        meta: {
-          totalCount,
-          count: data.length,
-          ...paginationOptions,
-        },
-        data,
-      };
-    } catch (error) {
-      return this.error.handler(error);
-    }
+    return {
+      meta: {
+        totalCount,
+        count: data.length,
+        ...paginationOptions,
+      },
+      data,
+    };
   }
 
   async readById(payload: Pick<Workspace, 'id'>) {
-    try {
-      const data = await this.database.workspace.findFirst({
-        where: { id: payload.id },
-      });
+    const data = await this.database.workspace.findFirst({
+      where: { id: payload.id },
+    });
 
-      return {
-        data,
-      };
-    } catch (error) {
-      return this.error.handler(error);
-    }
+    return {
+      data,
+    };
   }
 
   async readBySlug(payload: Pick<Workspace, 'slug'>) {
-    try {
-      const data = await this.database.workspace.findFirst({
-        where: { slug: payload.slug },
-      });
+    const data = await this.database.workspace.findFirst({
+      where: { slug: payload.slug },
+    });
 
-      return {
-        data,
-      };
-    } catch (error) {
-      return this.error.handler(error);
-    }
+    return {
+      data,
+    };
   }
 
   async readMyWorkspaces(payload: { user: UserWithAccount }) {
@@ -78,54 +65,42 @@ export class WorkspaceService {
   }
 
   async create(payload: Pick<Workspace, 'name' | 'slug'>) {
-    try {
-      const data = await this.database.workspace.create({
-        data: {
-          name: payload.name,
-          slug: payload.slug,
-        },
-      });
+    const data = await this.database.workspace.create({
+      data: {
+        name: payload.name,
+        slug: payload.slug,
+      },
+    });
 
-      return {
-        message: 'Workspace created',
-        data,
-      };
-    } catch (error) {
-      return this.error.handler(error);
-    }
+    return {
+      message: 'Workspace created',
+      data,
+    };
   }
 
   async update(id: number, payload: Pick<Workspace, 'name'>) {
-    try {
-      const data = await this.database.workspace.update({
-        where: { id },
-        data: {
-          name: payload.name,
-        },
-      });
+    const data = await this.database.workspace.update({
+      where: { id },
+      data: {
+        name: payload.name,
+      },
+    });
 
-      return {
-        message: 'User updated',
-        data,
-      };
-    } catch (error) {
-      return this.error.handler(error);
-    }
+    return {
+      message: 'User updated',
+      data,
+    };
   }
 
   async delete(id: number) {
-    try {
-      const data = await this.database.workspace.delete({
-        where: { id },
-      });
+    const data = await this.database.workspace.delete({
+      where: { id },
+    });
 
-      return {
-        message: 'User deleted',
-        data,
-      };
-    } catch (error) {
-      return this.error.handler(error);
-    }
+    return {
+      message: 'User deleted',
+      data,
+    };
   }
 
   async canAccessWorkspace(payload: { user: UserWithAccount; slug: string }) {

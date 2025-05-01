@@ -115,7 +115,7 @@ model Event {
 
 model Attendee {
   role DanceRole
-  type AttendenceType
+  type AttendanceType
 
   user User @relation(fields: [userId], references: [id])
   userId Int
@@ -145,7 +145,7 @@ enum WeekStart {
   SATURDAY
 }
 
-enum AttendenceType {
+enum AttendanceType {
   VALIDATE
   WAITING
 }
@@ -162,6 +162,6 @@ enum WorkspaceRole {
 }
 
 enum MemberStatus {
-  ACIVTE
-  DESACTIVATED
+  ACTIVE
+  DEACTIVATED
 }

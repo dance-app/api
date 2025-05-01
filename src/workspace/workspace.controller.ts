@@ -10,18 +10,20 @@ import {
   NotFoundException,
   ParseIntPipe,
 } from '@nestjs/common';
-import { GetAuthUser } from 'src/auth/decorator';
-import { JwtGuard } from 'src/auth/guard';
-import { MemberService } from 'src/member/member.service';
-import { GetPagination } from 'src/pagination/decorator';
-import { PaginationDto } from 'src/pagination/dto';
-import { UserDto } from 'src/user/dto';
-import { UserService } from 'src/user/user.service';
-import { UserWithAccount } from 'src/user/user.types';
 
 import { WorkspaceDto } from './dto';
 import { CanViewWorkspaceGuard } from './guard';
 import { WorkspaceService } from './workspace.service';
+
+import { GetAuthUser } from '@/auth/decorator';
+import { JwtGuard } from '@/auth/guard';
+import { MemberService } from '@/member/member.service';
+import { GetPagination } from '@/pagination/decorator';
+import { PaginationDto } from '@/pagination/dto';
+import { UserDto } from '@/user/dto';
+import { UserService } from '@/user/user.service';
+import { UserWithAccount } from '@/user/user.types';
+
 @UseGuards(JwtGuard)
 @Controller('workspaces')
 export class WorkspaceController {
@@ -77,13 +79,15 @@ export class WorkspaceController {
     @Body() data: UserDto,
   ) {
     const newUserResponse = await this.userService.create({
-      fullName: data.fullName,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      password: null,
+      isSuperAdmin: false,
+      isVerified: false,
     });
     const workspace = await this.workspaceService.readBySlug({ slug });
-    await this.userService.linkWorkspace(
-      newUserResponse.data.id,
-      workspace.data.id,
-    );
+    await this.userService.linkWorkspace(newUserResponse.id, workspace.data.id);
     return newUserResponse;
   }
 
@@ -99,16 +103,16 @@ export class WorkspaceController {
     return userResponse;
   }
 
-  @Patch('slug/:slug/members/:memberId')
-  @UseGuards(CanViewWorkspaceGuard)
-  async updateWorkspaceMember(
-    // @Param('slug') slug: string,
-    @Param('memberId', ParseIntPipe) memberId: number,
-    @Body() data: UserDto,
-  ) {
-    const userResponse = await this.userService.update(memberId, data);
-    return userResponse;
-  }
+  // @Patch('slug/:slug/members/:memberId')
+  // @UseGuards(CanViewWorkspaceGuard)
+  // async updateWorkspaceMember(
+  //   // @Param('slug') slug: string,
+  //   @Param('memberId', ParseIntPipe) memberId: number,
+  //   @Body() data: UserDto,
+  // ) {
+  //   const userResponse = await this.userService.update(memberId, data);
+  //   return userResponse;
+  // }
 
   @Get(':id')
   @UseGuards(CanViewWorkspaceGuard)
