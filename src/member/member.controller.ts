@@ -8,14 +8,17 @@ import {
   Query,
   ParseIntPipe,
 } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { Member, Workspace } from '@prisma/client';
+
+import { MemberService } from './member.service';
+
 import { JwtGuard } from '@/auth/guard';
 import { GetPagination } from '@/pagination/decorator';
 import { PaginationDto } from '@/pagination/dto';
 import { RolesGuard } from '@/role/guard/roles.guard';
 
-import { MemberService } from './member.service';
-
+@ApiBearerAuth()
 @UseGuards(JwtGuard, RolesGuard)
 @Controller('members')
 export class MemberController {

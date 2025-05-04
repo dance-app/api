@@ -10,6 +10,7 @@ import {
   NotFoundException,
   ParseIntPipe,
 } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 import { WorkspaceDto } from './dto';
 import { CanViewWorkspaceGuard } from './guard';
@@ -24,6 +25,7 @@ import { UserDto } from '@/user/dto';
 import { UserService } from '@/user/user.service';
 import { UserWithAccount } from '@/user/user.types';
 
+@ApiBearerAuth()
 @UseGuards(JwtGuard)
 @Controller('workspaces')
 export class WorkspaceController {
