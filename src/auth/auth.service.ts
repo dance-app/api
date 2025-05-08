@@ -23,7 +23,7 @@ export class AuthService {
       where: {
         accounts: {
           some: {
-            // provider: AccountProvider.LOCAL,
+            provider: AccountProvider.LOCAL,
             email: data.email,
           },
         },
@@ -41,7 +41,19 @@ export class AuthService {
       isVerified: false,
     });
 
-    return user;
+    const safeUser = {
+      ...user,
+      accounts: user.accounts.map((a) => {
+        if (a.provider === AccountProvider.LOCAL) {
+          // Omit the password field on LOCAL accounts
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { password, ...rest } = a;
+          return rest;
+        }
+        return a;
+      }),
+    };
+    return safeUser;
   }
 
   async signIn(data: SignInDto) {

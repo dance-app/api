@@ -1,6 +1,6 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, AccountProvider } from '@prisma/client';
 import request from 'supertest';
 
 import { AppModule } from '../app.module';
@@ -39,9 +39,29 @@ describe('Auth flow', () => {
       .send(dto)
       .expect(201)
       .then((res) => {
-        expect(res.body.firstName).toBe(dto.firstName);
-        expect(res.body.lastName).toBe(dto.lastName);
-        expect(res.body.accounts?.[0].email).toBe(dto.email);
+        expect.objectContaining({
+          id: expect.any(Number),
+          createdAt: expect.any(String),
+          updatedAt: expect.any(String),
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          token: null,
+          isSuperAdmin: false,
+          accounts: expect.any(Array),
+        });
+        const account = res.body.accounts[0];
+        expect(account).toEqual(
+          expect.objectContaining({
+            id: expect.any(Number),
+            createdAt: expect.any(String),
+            updatedAt: expect.any(String),
+            provider: AccountProvider.LOCAL,
+            email: dto.email,
+            isEmailVerified: false,
+            userId: res.body.id,
+          }),
+        );
+        expect(account).not.toHaveProperty('password');
       });
   });
 
@@ -52,6 +72,9 @@ describe('Auth flow', () => {
       .expect(200)
       .then((res) => {
         expect(res.body.token).toBeDefined();
+        expect.objectContaining({
+          token: expect.any(String),
+        });
       });
   });
 
