@@ -21,6 +21,7 @@ const config: Config.InitialOptions = {
   },
   moduleNameMapper: {
     '^@/lib/(.*)$': '<rootDir>/lib/$1',
+    '^@/test/(.*)$': '<rootDir>/test/$1',
     '^@/(.*)$': '<rootDir>/src/$1',
   },
 };

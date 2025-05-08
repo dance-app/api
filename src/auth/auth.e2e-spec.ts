@@ -1,9 +1,15 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { PrismaClient, AccountProvider } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import request from 'supertest';
 
 import { AppModule } from '../app.module';
+
+import {
+  expectAccountShape,
+  expectUserShapeWithoutToken,
+  expectUserShapeWithToken,
+} from '@/test/assertions';
 
 describe('Auth flow', () => {
   let app: INestApplication;
@@ -38,30 +44,9 @@ describe('Auth flow', () => {
       .post('/auth/sign-up')
       .send(dto)
       .expect(201)
-      .then((res) => {
-        expect.objectContaining({
-          id: expect.any(Number),
-          createdAt: expect.any(String),
-          updatedAt: expect.any(String),
-          firstName: dto.firstName,
-          lastName: dto.lastName,
-          token: null,
-          isSuperAdmin: false,
-          accounts: expect.any(Array),
-        });
-        const account = res.body.accounts[0];
-        expect(account).toEqual(
-          expect.objectContaining({
-            id: expect.any(Number),
-            createdAt: expect.any(String),
-            updatedAt: expect.any(String),
-            provider: AccountProvider.LOCAL,
-            email: dto.email,
-            isEmailVerified: false,
-            userId: res.body.id,
-          }),
-        );
-        expect(account).not.toHaveProperty('password');
+      .then(({ body }) => {
+        expectUserShapeWithoutToken(body, dto);
+        expectAccountShape(body.accounts[0], body.id, dto);
       });
   });
 
@@ -83,5 +68,24 @@ describe('Auth flow', () => {
       .post('/auth/sign-in')
       .send({ email: dto.email, password: 'wrong' })
       .expect(403);
+  });
+
+  it('get-me 200 returns current user', async () => {
+    const { body: signInBody } = await request(app.getHttpServer())
+      .post('/auth/sign-in')
+      .send({ email: dto.email, password: dto.password })
+      .expect(200);
+
+    const token = signInBody.token as string;
+
+    return request(app.getHttpServer())
+      .get('/auth/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200)
+      .then(({ body }) => {
+        console.log('body', body);
+        expectUserShapeWithToken(body, dto);
+        expectAccountShape(body.accounts[0], body.id, dto);
+      });
   });
 });

@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AccountProvider } from '@prisma/client';
@@ -8,6 +12,7 @@ import { SignInDto, SignUpDto } from './dto';
 
 import { DatabaseService } from '@/database/database.service';
 import { UserService } from '@/user/user.service';
+import { UserWithAccount } from '@/user/user.types';
 
 @Injectable({})
 export class AuthService {
@@ -97,5 +102,16 @@ export class AuthService {
       expiresIn: '100 days',
       secret: this.config.get('JWT_SECRET'),
     });
+  }
+
+  async getMe(userId: number): Promise<UserWithAccount> {
+    const user = await this.database.user.findUnique({
+      where: { id: userId },
+      include: { accounts: true },
+    });
+    if (!user) throw new NotFoundException('User not found');
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const accounts = user.accounts.map(({ password, ...rest }) => rest);
+    return { ...user, accounts };
   }
 }

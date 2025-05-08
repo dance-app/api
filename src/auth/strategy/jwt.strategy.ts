@@ -50,7 +50,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, STRATEGY_NAME) {
       const { password, user, ...accountFields } = account;
       return {
         ...account.user,
-        account: accountFields,
+        accounts: [accountFields],
       };
     } catch (error) {
       return null;
