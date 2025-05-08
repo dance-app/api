@@ -20,9 +20,8 @@ describe('Auth flow', () => {
   });
 
   afterAll(async () => {
-    await prisma.$executeRawUnsafe(
-      `TRUNCATE "Account","User" RESTART IDENTITY CASCADE;`,
-    );
+    await prisma.account.deleteMany();
+    await prisma.user.deleteMany();
     await prisma.$disconnect();
     await app.close();
   });
@@ -40,8 +39,9 @@ describe('Auth flow', () => {
       .send(dto)
       .expect(201)
       .then((res) => {
-        expect(res.body.data.email).toBe(dto.email);
-        expect(res.body.data).not.toHaveProperty('token'); // token is set later
+        expect(res.body.firstName).toBe(dto.firstName);
+        expect(res.body.lastName).toBe(dto.lastName);
+        expect(res.body.accounts?.[0].email).toBe(dto.email);
       });
   });
 
@@ -51,7 +51,7 @@ describe('Auth flow', () => {
       .send({ email: dto.email, password: dto.password })
       .expect(200)
       .then((res) => {
-        expect(res.body.data.token).toBeDefined();
+        expect(res.body.token).toBeDefined();
       });
   });
 

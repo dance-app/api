@@ -1,4 +1,3 @@
-// test/prisma-teardown.ts
 import { PrismaClient } from '@prisma/client';
 import { config } from 'dotenv';
 config({ path: '.env.test' });
