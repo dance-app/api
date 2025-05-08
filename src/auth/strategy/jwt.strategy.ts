@@ -1,15 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { AccountProvider, User, Account } from '@prisma/client';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+
 import { DatabaseService } from '@/database/database.service';
 import { UserWithAccount } from '@/user/user.types';
 
 export const STRATEGY_NAME = 'jwt';
 
 @Injectable()
-export class JwTStrategy extends PassportStrategy(Strategy, STRATEGY_NAME) {
+export class JwtStrategy extends PassportStrategy(Strategy, STRATEGY_NAME) {
   constructor(
     config: ConfigService,
     private database: DatabaseService,
@@ -17,7 +18,7 @@ export class JwTStrategy extends PassportStrategy(Strategy, STRATEGY_NAME) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       // TODO: handle refresh token then use the expiration
-      ignoreExpiration: true,
+      ignoreExpiration: false,
       secretOrKey: config.get('JWT_SECRET'),
     });
   }
@@ -30,7 +31,7 @@ export class JwTStrategy extends PassportStrategy(Strategy, STRATEGY_NAME) {
     email: Account['email'];
     iat: number;
     exp: number;
-  }): Promise<UserWithAccount | null> {
+  }): Promise<UserWithAccount> {
     try {
       const account = await this.database.account.findFirst({
         where: {
@@ -43,22 +44,14 @@ export class JwTStrategy extends PassportStrategy(Strategy, STRATEGY_NAME) {
         },
       });
 
-      if (account && !!account.user.token) {
-        const user = account.user;
-        delete user.token;
-        const accountWithoutUser = account;
-        delete accountWithoutUser.user;
-        delete accountWithoutUser.userId;
-        delete accountWithoutUser.password;
-        const exposedUser = {
-          ...user,
-          account: accountWithoutUser,
-        };
+      if (!account) throw new UnauthorizedException();
 
-        return exposedUser;
-      } else {
-        return null;
-      }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, user, ...accountFields } = account;
+      return {
+        ...account.user,
+        account: accountFields,
+      };
     } catch (error) {
       return null;
     }
