@@ -42,6 +42,8 @@ pnpm run db:dev:reset
 
 ### Start the server
 
+You can see dev server at [http://localhost:3333/](http://localhost:3333/)
+
 ```bash
 # development
 $ pnpm run start
