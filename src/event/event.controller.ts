@@ -8,6 +8,7 @@ import {
   Body,
   // Param,
 } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 import { CreateEventDto } from './dto';
 import { EventService } from './event.service';
@@ -16,6 +17,7 @@ import { JwtGuard } from '@/auth/guard';
 import { GetPagination } from '@/pagination/decorator';
 import { PaginationDto } from '@/pagination/dto';
 
+@ApiBearerAuth()
 @Controller('events')
 export class EventController {
   constructor(private eventService: EventService) {}

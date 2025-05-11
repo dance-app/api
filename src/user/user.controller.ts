@@ -18,7 +18,9 @@ import { RolesGuard } from '@/role/guard/roles.guard';
 import { UserDto } from './dto';
 import { UserService } from './user.service';
 import { UserWithAccount } from './user.types';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth()
 @UseGuards(JwtGuard, RolesGuard)
 @Controller('users')
 export class UserController {
