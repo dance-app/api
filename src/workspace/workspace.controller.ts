@@ -80,7 +80,8 @@ export class WorkspaceController {
     @Param('slug') slug: string,
     @Body() data: UserDto,
   ) {
-    const newUserResponse = await this.userService.create({
+    // TODO: some kind of invitation based workflow?
+    /*const newUserResponse = await this.userService.create({
       firstName: data.firstName,
       lastName: data.lastName,
       email: data.email,
@@ -90,7 +91,7 @@ export class WorkspaceController {
     });
     const workspace = await this.workspaceService.readBySlug({ slug });
     await this.userService.linkWorkspace(newUserResponse.id, workspace.data.id);
-    return newUserResponse;
+    return newUserResponse;*/
   }
 
   @Get('slug/:slug/members/:memberId')

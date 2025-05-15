@@ -44,7 +44,36 @@ model Account {
   user User @relation(fields: [userId], references: [id])
   userId Int
 
+  resetToken      PasswordResetToken?
+  emailToken      EmailConfirmationToken?
+
   @@map("accounts")
+}
+
+model PasswordResetToken {
+  id              Int           @id @default(autoincrement())
+  createdAt       DateTime      @default(now()) @db.Timestamptz(3)
+  expiresAt       DateTime      @db.Timestamptz(3)
+
+  token           String        @unique @db.Uuid
+  
+  account         Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId       Int           @unique
+  
+  @@map("password_reset_tokens")
+}
+
+model EmailConfirmationToken {
+  id              Int           @id @default(autoincrement())
+  createdAt       DateTime      @default(now()) @db.Timestamptz(3)
+  expiresAt       DateTime      @db.Timestamptz(3)
+  
+  token           String        @unique @db.Uuid
+  
+  account         Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId       Int           @unique
+  
+  @@map("email_confirmation_tokens")
 }
 
 model Workspace {

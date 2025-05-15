@@ -4,7 +4,7 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 export const GetAuthUser = createParamDecorator(
-  (_data: unknown, context: ExecutionContext) => {
+  (data: string, context: ExecutionContext) => {
     const request: {
       user: any;
     } & Express.Request = context.switchToHttp().getRequest();
@@ -12,6 +12,7 @@ export const GetAuthUser = createParamDecorator(
      * Express is putting by default the result inside the `user` key from
      * request object
      */
-    return request.user;
+    const user = request.user;
+    return data ? user?.[data] : user;
   },
 );

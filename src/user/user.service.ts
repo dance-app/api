@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Account, AccountProvider, User, WorkspaceRole } from '@prisma/client';
 import * as argon from 'argon2';
 
-import { CreateUserDto, UpdateUserDto } from './dto';
+import { UpdateUserDto } from './dto';
 
 import { DatabaseService } from '@/database/database.service';
 import { PaginationDto } from '@/pagination/dto';
@@ -41,7 +41,18 @@ export class UserService {
     };
   }
 
-  async create(data: CreateUserDto) {
+  /*async create(data: CreateUserDto) {
+    let emailToken = null;
+    if (!data.isVerified) {
+      const expiredAt = new Date();
+      expiredAt.setHours(expiredAt.getHours() + 24);
+      emailToken = {
+        create: {
+          expiresAt: expiredAt,
+          token: uuid.uuid4(),
+        }
+      };
+    }
     const newUser = await this.database.user.create({
       data: {
         firstName: data.firstName,
@@ -53,6 +64,7 @@ export class UserService {
             email: data.email,
             password: await argon.hash(data.password),
             isEmailVerified: data.isVerified || false,
+            emailToken: emailToken,
           },
         },
       },
@@ -62,7 +74,7 @@ export class UserService {
     });
 
     return newUser;
-  }
+  }*/
 
   async update(id: number, data: UpdateUserDto) {
     const updatedUser = await this.database.user.update({
@@ -70,7 +82,6 @@ export class UserService {
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
-        isSuperAdmin: data.isSuperAdmin,
       },
       include: { accounts: true },
     });
@@ -102,6 +113,15 @@ export class UserService {
       user: updatedUser,
       account: updatedAccount,
     };
+  }
+
+  async readByEmail(email: string): Promise<User | null> {
+    const account = await this.database.account.findFirst({
+      where: { email },
+      include: { user: true },
+    });
+
+    return account?.user;
   }
 
   async delete(id: number) {

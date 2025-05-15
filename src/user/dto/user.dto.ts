@@ -1,32 +1,5 @@
-import {
-  IsBoolean,
-  IsEmail,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-} from 'class-validator';
-
-export class CreateUserDto {
-  @IsEmail()
-  email: string;
-
-  @IsString()
-  firstName: string;
-
-  @IsString()
-  lastName: string;
-
-  @IsString()
-  password: string;
-
-  @IsBoolean()
-  @IsOptional()
-  isSuperAdmin: boolean;
-
-  @IsBoolean()
-  @IsOptional()
-  isVerified: boolean;
-}
+import { Exclude } from 'class-transformer';
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class UpdateUserDto {
   @IsString()
@@ -35,15 +8,14 @@ export class UpdateUserDto {
   @IsString()
   lastName: string;
 
-  @IsString()
+  // The following attributes cannot be updated this way. Use the auth module.
+  @Exclude()
   password: string;
 
-  @IsBoolean()
-  @IsOptional()
+  @Exclude()
   isSuperAdmin: boolean;
 
-  @IsBoolean()
-  @IsOptional()
+  @Exclude()
   isVerified: boolean;
 }
 

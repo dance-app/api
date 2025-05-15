@@ -1,5 +1,7 @@
-import { Account, User } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
-export type UserWithAccount = User & {
-  accounts: Omit<Account, 'password'>[];
-};
+const userWithAccount = Prisma.validator<Prisma.UserDefaultArgs>()({
+  include: { accounts: true },
+});
+
+export type UserWithAccount = Prisma.UserGetPayload<typeof userWithAccount>;

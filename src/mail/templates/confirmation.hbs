@@ -1,0 +1,10 @@
+{{#> layouts/main title="Email Confirmation"}}
+<p>Hi {{name}},</p>
+<p>Please confirm your email address by clicking the button below:</p>
+
+{{> partials/button url=confirmUrl text="Confirm Email Address" color="#3490dc"}}
+
+<p>If you did not create an account, no further action is required.</p>
+<p>If you're having trouble clicking the button, copy and paste the URL below into your web browser:</p>
+<p>{{confirmUrl}}</p>
+{{/layouts/main}}

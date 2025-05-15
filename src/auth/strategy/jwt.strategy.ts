@@ -1,11 +1,11 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
-import { AccountProvider, User, Account } from '@prisma/client';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
-import { DatabaseService } from '@/database/database.service';
-import { UserWithAccount } from '@/user/user.types';
+import { AuthService } from '../auth.service';
+import { JwtPayload } from '../dto';
+import { SafeUserDto } from '../dto/safe-user.dto';
 
 export const STRATEGY_NAME = 'jwt';
 
@@ -13,7 +13,7 @@ export const STRATEGY_NAME = 'jwt';
 export class JwtStrategy extends PassportStrategy(Strategy, STRATEGY_NAME) {
   constructor(
     config: ConfigService,
-    private database: DatabaseService,
+    private authService: AuthService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -26,34 +26,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, STRATEGY_NAME) {
   /**
    * @returns {UserAccount | Null} Returning null with provoke a 401 Unauthorized error
    */
-  async validate(payload: {
-    sub: User['id'];
-    email: Account['email'];
-    iat: number;
-    exp: number;
-  }): Promise<UserWithAccount> {
-    try {
-      const account = await this.database.account.findFirst({
-        where: {
-          provider: AccountProvider.LOCAL,
-          userId: payload.sub,
-          email: payload.email,
-        },
-        include: {
-          user: true,
-        },
-      });
-
-      if (!account) throw new UnauthorizedException();
-
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password, user, ...accountFields } = account;
-      return {
-        ...account.user,
-        accounts: [accountFields],
-      };
-    } catch (error) {
-      return null;
-    }
+  async validate(payload: JwtPayload): Promise<SafeUserDto> {
+    const user = await this.authService.validateJwtPayload(payload); // throws if invalid token
+    return this.authService.mapToSafeUser(user, user.accounts);
   }
 }

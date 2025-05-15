@@ -32,12 +32,6 @@ export class UserController {
     return user;
   }
 
-  // @Post('')
-  // @Roles([], true)
-  // create(@Body() data: UserDto) {
-  //   return this.userService.create(data);
-  // }
-
   @Get('')
   @Roles([], true)
   // @UseGuards(RolesGuard)
