@@ -1,7 +1,8 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
-import { UserWithAccount } from '@/user/user.types';
 
 import { WorkspaceService } from '../workspace.service';
+
+import { UserWithAccount } from '@/user/user.types';
 
 @Injectable()
 export class CanViewWorkspaceGuard implements CanActivate {
@@ -14,10 +15,10 @@ export class CanViewWorkspaceGuard implements CanActivate {
 
     if (!user || !slug) return false;
 
-    const canAccessWorkspace = await this.workspaceService.canAccessWorkspace({
+    const canAccessWorkspace = await this.workspaceService.canAccessWorkspace(
       user,
       slug,
-    });
+    );
 
     return canAccessWorkspace;
   }

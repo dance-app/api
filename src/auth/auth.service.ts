@@ -3,10 +3,12 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { JwtService } from '@nestjs/jwt';
 import { AccountProvider, User, Account } from '@prisma/client';
 import * as argon from 'argon2';
@@ -17,6 +19,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { SafeUserDto } from './dto/safe-user.dto';
+import { UserCreatedEvent } from './event/user-created.event';
 
 import { DatabaseService } from '@/database/database.service';
 import { MailService } from '@/mail/mail.service';
@@ -25,12 +28,14 @@ import { UserWithAccount } from '@/user/user.types';
 
 @Injectable({})
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   constructor(
     private database: DatabaseService,
     private jwt: JwtService,
     private config: ConfigService,
     private userService: UserService,
     private emailService: MailService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   //=================
@@ -153,7 +158,7 @@ export class AuthService {
       where: { provider: provider, email: email },
     });
 
-    if (!!existingAccount) throw new ConflictException('Email already exists');
+    if (!!existingAccount) throw new ConflictException('Email already in use');
 
     // If it's a LOCAL provider, password is required
     if (provider === AccountProvider.LOCAL && !password) {
@@ -205,6 +210,11 @@ export class AuthService {
         },
       });
       account = (user as UserWithAccount).accounts[0];
+
+      this.eventEmitter.emit(
+        'user.created',
+        new UserCreatedEvent(user as UserWithAccount, email),
+      );
     }
 
     // For LOCAL provider, send email verification
@@ -244,6 +254,9 @@ export class AuthService {
 
   private async checkLocalSignIn(password: string, account: Account) {
     if (!password) {
+      this.logger.log(
+        `Login attempt with no password for account ${account.id}`,
+      );
       throw new BadRequestException('Password is required for email sign in');
     }
 
@@ -259,6 +272,9 @@ export class AuthService {
       account.password,
     );
     if (!isPasswordValid) {
+      this.logger.log(
+        `Login attempt with wrong password for account ${account.id}`,
+      );
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -274,20 +290,27 @@ export class AuthService {
 
   async signIn(data: SignInDto) {
     const { email, password, provider = AccountProvider.LOCAL } = data;
-
+    this.logger.debug(`Signin request from ${email}`);
     // Find the account
     const account = await this.database.account.findFirst({
       where: { email, provider },
       include: { user: true },
     });
 
-    if (!account) throw new ForbiddenException('Credentials not correct');
-
+    if (!account) {
+      this.logger.debug(`Credentials not correct for ${email}`);
+      throw new ForbiddenException('Credentials not correct');
+    }
+    this.logger.debug(`Trying signing in ${email} with provider ${provider}`);
     if (provider === AccountProvider.LOCAL) {
       await this.checkLocalSignIn(password, account);
     }
 
-    return await this.getLoginInfo(account.user, account);
+    const loginInfo = await this.getLoginInfo(account.user, account);
+    this.logger.log(
+      `Account ${account.id} for user ${account.user.id} successfully logged in.`,
+    );
+    return loginInfo;
   }
 
   //===================
@@ -352,15 +375,19 @@ export class AuthService {
     });
 
     if (!resetToken) {
+      this.logger.log('resetPassword: Invalid reset token tried.');
       throw new NotFoundException('Invalid or expired token');
     }
 
     // Check if token is expired
     if (new Date() > resetToken.expiresAt) {
+      this.logger.log(
+        `resetPassword: expired token ${resetToken.id} for account ${resetToken.accountId}. Deleting...`,
+      );
       await this.database.passwordResetToken.delete({
         where: { id: resetToken.id },
       });
-      throw new UnauthorizedException('Token has expired');
+      throw new UnauthorizedException('Invalid or expired token');
     }
 
     // Hash new password
@@ -452,7 +479,7 @@ export class AuthService {
     });
 
     if (!emailToken) {
-      throw new BadRequestException('Invalid token');
+      throw new BadRequestException('Invalid or expired token');
     }
 
     if (new Date() > emailToken.expiresAt) {
@@ -460,7 +487,7 @@ export class AuthService {
       await this.database.emailConfirmationToken.delete({
         where: { id: emailToken.id },
       });
-      throw new BadRequestException('Token expired. Request a new one.');
+      throw new BadRequestException('Invalid or expired token');
     }
 
     await this.database.$transaction([

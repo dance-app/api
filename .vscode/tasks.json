@@ -1,0 +1,41 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "db:dev:start",
+			"problemMatcher": [],
+			"label": "npm: db:dev:start",
+			"detail": "docker compose up dev-db -d"
+		},
+		{
+			"type": "npm",
+			"script": "db:dev:generate",
+			"problemMatcher": [],
+			"label": "npm: db:dev:generate",
+			"detail": "npx prisma generate"
+		},
+		{
+			"type": "npm",
+			"script": "db:dev:debug",
+			"problemMatcher": [],
+			"label": "npm: db:dev:debug",
+			"detail": "npx prisma studio --browser none"
+		},
+		{
+			"type": "npm",
+			"script": "db:dev:reset",
+			"problemMatcher": [],
+			"label": "npm: db:dev:reset",
+			"detail": "npx prisma migrate reset --force && pnpm run seed"
+		},
+		{
+			"label": "Pre-debug",
+			"dependsOn": [
+				"npm: db:dev:start",
+				"npm: db:dev:generate",
+				"npm: db:dev:reset"
+			]
+		}
+	]
+}

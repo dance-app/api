@@ -1,1 +1,2 @@
-export * from './canViewWorkspace.guard';
+export * from './can-view-workspace.guard';
+export * from './workspace-roles.guard';

@@ -1,5 +1,13 @@
-import { Injectable } from '@nestjs/common';
-import { Workspace } from '@prisma/client';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { WeekStart, Workspace, WorkspaceRole, Prisma } from '@prisma/client';
+
+import { CreateWorkspaceDto } from './dto/create-workspace.dto';
+import { WorkspaceResponseDto } from './dto/workspace-response.dto';
+import { WorkspaceWithConfig, WorkspaceWithMember } from './worspace.types';
 
 import { DatabaseService } from '@/database/database.service';
 import { PaginationDto } from '@/pagination/dto';
@@ -12,6 +20,38 @@ export class WorkspaceService {
     private database: DatabaseService,
     private pagination: PaginationService,
   ) {}
+
+  toDto(
+    workspace: WorkspaceWithMember | Workspace | WorkspaceWithConfig,
+  ): WorkspaceResponseDto {
+    const dto: WorkspaceResponseDto = {
+      id: workspace.id,
+      name: workspace.name,
+      slug: workspace.slug,
+      createdAt: workspace.createdAt,
+      updatedAt: workspace.updatedAt,
+      configuration:
+        'configuration' in workspace && workspace.configuration
+          ? {
+              id: workspace.configuration.id,
+              weekStart: workspace.configuration.weekStart,
+            }
+          : null,
+    };
+
+    // Add members count if members are included
+    if ('members' in workspace && workspace.members) {
+      dto.membersCount = workspace.members.length;
+    }
+
+    return dto;
+  }
+
+  toDtoList(
+    workspaces: (WorkspaceWithMember | Workspace | WorkspaceWithConfig)[],
+  ): WorkspaceResponseDto[] {
+    return workspaces.map((workspace) => this.toDto(workspace));
+  }
 
   async readAll(paginationOptions: PaginationDto) {
     const totalCount = await this.database.workspace.count();
@@ -39,22 +79,12 @@ export class WorkspaceService {
     };
   }
 
-  async readBySlug(payload: Pick<Workspace, 'slug'>) {
-    const data = await this.database.workspace.findFirst({
-      where: { slug: payload.slug },
-    });
-
-    return {
-      data,
-    };
-  }
-
-  async readMyWorkspaces(payload: { user: UserWithAccount }) {
+  async readMyWorkspaces(user: UserWithAccount) {
     const result = await this.database.workspace.findMany({
       where: {
         members: {
           some: {
-            userId: payload.user.id,
+            userId: user.id,
           },
         },
       },
@@ -64,18 +94,76 @@ export class WorkspaceService {
     };
   }
 
-  async create(payload: Pick<Workspace, 'name' | 'slug'>) {
-    const data = await this.database.workspace.create({
-      data: {
-        name: payload.name,
-        slug: payload.slug,
-      },
+  private generateSlug(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  async createWithOwner(
+    createWorkspaceDto: CreateWorkspaceDto,
+    createdById: number, // Owner or Super admin ID
+    ownerId?: number, // Assigned owner ID
+  ) {
+    const { name, slug, weekStart } = createWorkspaceDto;
+
+    // Generate slug if not provided
+    const workspaceSlug = slug || this.generateSlug(name);
+
+    // Check if slug is unique
+    const existingWorkspace = await this.database.workspace.findUnique({
+      where: { slug: workspaceSlug },
     });
 
-    return {
-      message: 'Workspace created',
-      data,
-    };
+    if (existingWorkspace) {
+      throw new ConflictException(
+        `Workspace with slug ${workspaceSlug} already exists`,
+      );
+    }
+
+    ownerId = ownerId || createdById;
+
+    // Verify owner exists
+    const owner = await this.database.user.findUnique({
+      where: { id: ownerId },
+    });
+
+    if (!owner) {
+      throw new NotFoundException(`User with ID ${ownerId} not found`);
+    }
+
+    return await this.database.$transaction(async (prisma) => {
+      // Create workspace
+      const workspace = await prisma.workspace.create({
+        data: {
+          name,
+          slug: workspaceSlug,
+          createdById: createdById, // Super admin ID as creator
+          configuration: {
+            create: {
+              weekStart: weekStart || WeekStart.MONDAY,
+            },
+          },
+        },
+      });
+
+      // Add specified user as owner
+      await prisma.member.create({
+        data: {
+          createdById,
+          userId: ownerId,
+          workspaceId: workspace.id,
+          roles: [WorkspaceRole.OWNER],
+        },
+      });
+
+      // Transform to DTO before returning
+      return this.toDto(workspace);
+    });
+  }
+  async create(payload: CreateWorkspaceDto, ownerUserId: number) {
+    return await this.createWithOwner(payload, ownerUserId);
   }
 
   async update(id: number, payload: Pick<Workspace, 'name'>) {
@@ -103,28 +191,55 @@ export class WorkspaceService {
     };
   }
 
-  async canAccessWorkspace(payload: { user: UserWithAccount; slug: string }) {
+  /**
+   * Find a workspace by its slug (doesn't throw exceptions)
+   * @param slug The workspace slug
+   * @returns The workspace or null if not found
+   */
+  async findWorkspaceBySlug(slug: string, include?: Prisma.WorkspaceInclude) {
+    return this.database.workspace.findUnique({
+      where: { slug },
+      include,
+    });
+  }
+
+  /**
+   * Get a workspace by its slug (throws exception if not found)
+   * @param slug The workspace slug
+   * @returns The workspace
+   * @throws NotFoundException if workspace not found
+   */
+  async getWorkspaceBySlug(slug: string) {
+    const workspace = await this.findWorkspaceBySlug(slug);
+
+    if (!workspace) {
+      throw new NotFoundException(`Workspace with slug "${slug}" not found`);
+    }
+
+    return this.toDto(workspace);
+  }
+
+  async canAccessWorkspace(user: UserWithAccount, slug: string) {
     const workspace = await this.database.workspace.findFirst({
       where: {
-        slug: {
-          equals: payload.slug,
-        },
+        slug,
       },
     });
 
     if (!workspace) return false;
 
+    if (user.isSuperAdmin) return true;
+
     const result = await this.database.workspace.findFirst({
       where: {
         members: {
           some: {
-            userId: payload.user.id,
+            userId: user.id,
             workspaceId: workspace.id,
           },
         },
       },
     });
-
-    return !!result.id;
+    return !!result;
   }
 }

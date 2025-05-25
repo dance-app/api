@@ -1,0 +1,8 @@
+{
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "always"
+    },
+    "jest.debugMode": true,
+    "jest.runMode": "on-demand",
+    "jest.jestCommandLine": "./node_modules/.bin/jest --config test/jest-e2e.config.ts",
+}

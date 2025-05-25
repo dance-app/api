@@ -1,69 +1,55 @@
 import {
   Controller,
   Get,
-  Post,
-  Patch,
   UseGuards,
-  Body,
   Param,
   Delete,
+  ForbiddenException,
 } from '@nestjs/common';
-import { GetAuthUser } from '@/auth/decorator';
-import { JwtGuard } from '@/auth/guard';
-import { GetPagination } from '@/pagination/decorator';
-import { PaginationDto } from '@/pagination/dto';
-import { Roles } from '@/role/decorator/roles.decorator';
-import { RolesGuard } from '@/role/guard/roles.guard';
-
-import { UserDto } from './dto';
-import { UserService } from './user.service';
-import { UserWithAccount } from './user.types';
 import { ApiBearerAuth } from '@nestjs/swagger';
 
+import { UserService } from './user.service';
+import { UserWithAccount } from './user.types';
+
+import { GetAuthUser } from '@/auth/decorator';
+import { JwtGuard } from '@/auth/guard';
+import { SuperAdminGuard } from '@/auth/guard/super-admin.guard';
+import { GetPagination } from '@/pagination/decorator';
+import { PaginationDto } from '@/pagination/dto';
+
 @ApiBearerAuth()
-@UseGuards(JwtGuard, RolesGuard)
+@UseGuards(JwtGuard)
 @Controller('users')
 export class UserController {
   constructor(private userService: UserService) {}
 
-  @UseGuards(JwtGuard)
   @Get('me')
   getMe(@GetAuthUser() user: UserWithAccount) {
     return user;
   }
 
   @Get('')
-  @Roles([], true)
-  // @UseGuards(RolesGuard)
+  @UseGuards(SuperAdminGuard)
   getUsers(@GetPagination() paginationOptions: PaginationDto) {
-    console.log('ok');
-    return [];
-    // return this.userService.readAll(paginationOptions);
+    return this.userService.readAll(paginationOptions);
   }
 
   @Get(':id')
-  @Roles([], true)
-  getUser(@Param('id') id: string) {
-    return this.userService.readById({ id: Number(id) });
+  async getUser(
+    @GetAuthUser() user: UserWithAccount,
+    @Param('id') id: number,
+  ): Promise<UserWithAccount> {
+    if (user.id !== id && !user.isSuperAdmin) throw new ForbiddenException();
+    // TODO: what other users can see about other users?
+    return await this.userService.findById(id, true);
   }
 
   // @Patch(':id')
-  // @Roles([], true)
   // updateUser(@Param('id') id: string, @Body() data: UserDto) {
   //   return this.userService.update(Number(id), data);
   // }
 
-  @Patch(':id/link-workspace')
-  @Roles([], true)
-  linkWorkspace(
-    @Param('id') id: string,
-    @Body() data: { workspaceId: number },
-  ) {
-    return this.userService.linkWorkspace(Number(id), data.workspaceId);
-  }
-
   @Delete(':id')
-  @Roles([], true)
   delete(@Param('id') id: string) {
     return this.userService.delete(Number(id));
   }

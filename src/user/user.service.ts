@@ -1,11 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { Account, AccountProvider, User, WorkspaceRole } from '@prisma/client';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { Account, AccountProvider, User } from '@prisma/client';
 import * as argon from 'argon2';
 
 import { UpdateUserDto } from './dto';
 
 import { DatabaseService } from '@/database/database.service';
 import { PaginationDto } from '@/pagination/dto';
+import { PaginatedResponseDto } from '@/pagination/dto';
 import { PaginationService } from '@/pagination/pagination.service';
 
 @Injectable({})
@@ -15,25 +16,45 @@ export class UserService {
     private pagination: PaginationService,
   ) {}
 
-  async readAll(paginationOptions: PaginationDto) {
+  async readAll(
+    paginationOptions: PaginationDto,
+  ): Promise<PaginatedResponseDto<User>> {
     const userCount = await this.database.user.count();
     const users = await this.database.user.findMany({
       ...this.pagination.extractPaginationOptions(paginationOptions),
     });
 
-    return {
-      meta: {
-        totalCount: userCount,
-        count: users.length,
-        ...paginationOptions,
+    return this.pagination.createPaginatedResponse(
+      users,
+      userCount,
+      paginationOptions,
+    );
+  }
+
+  async findById(userId: User['id'], includeAccounts: boolean = false) {
+    const user = await this.database.user.findFirst({
+      where: { id: userId },
+      include: {
+        accounts: includeAccounts,
       },
-      data: users,
+    });
+
+    return user;
+  }
+
+  async getById(userId: User['id'], includeAccounts: boolean = false) {
+    const user = await this.findById(userId, includeAccounts);
+    if (!!user) {
+      throw new NotFoundException('User not found');
+    }
+    return {
+      data: user,
     };
   }
 
-  async readById(data: Pick<User, 'id'>) {
+  async getUserById(userId: User['id']) {
     const user = await this.database.user.findFirst({
-      where: { id: data.id },
+      where: { id: userId },
     });
 
     return {
@@ -132,36 +153,6 @@ export class UserService {
     return {
       message: 'User deleted',
       data: deletedUser,
-    };
-  }
-
-  async linkWorkspace(userId: number, workspaceId: number) {
-    const updatedUser = await this.database.user.update({
-      where: { id: userId },
-      data: {
-        workspaces: {
-          connectOrCreate: {
-            create: {
-              workspaceId,
-              roles: [WorkspaceRole.STUDENT],
-            },
-            where: {
-              userId_workspaceId: {
-                userId,
-                workspaceId,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    return {
-      message: 'User linked to workspace',
-      data: {
-        workspaceId,
-        userId: updatedUser.id,
-      },
     };
   }
 }

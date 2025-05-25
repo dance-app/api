@@ -1,0 +1,12 @@
+{{#> layouts/main title="SSO Authentication Information"}}
+<p>Hi {{name}},</p>
+<p>You are receiving this email because we received a password reset request for your account.</p>
+
+<p>We noticed that your account uses Single Sign-On (SSO) authentication through {{ssoProviders}}.</p>
+
+{{> partials/button url=ssoLoginUrl text="Sign In with SSO" color="#f6993f"}}
+
+<p class="important">If you did not request account access information, no further action is required.</p>
+<p>If you're having trouble clicking the button, copy and paste the URL below into your web browser:</p>
+<p>{{ssoLoginUrl}}</p>
+{{/layouts/main}}

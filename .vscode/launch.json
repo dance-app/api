@@ -5,18 +5,33 @@
         "type": "node",
         "request": "launch",
         "name": "Debug Nest Framework",
-        "runtimeExecutable": "npm",
+        "runtimeExecutable": "pnpm",
         "runtimeArgs": [
           "run",
           "start:debug",
           "--",
           "--inspect-brk"
         ],
+        "preLaunchTask": "Pre-debug",
         "autoAttachChildProcesses": true,
         "restart": true,
         "sourceMaps": true,
         "stopOnEntry": false,
         "console": "integratedTerminal",
+      },
+      {
+        "type": "node-terminal",
+        "request": "launch",
+        "name": "Debug Jest Tests",
+        "command": "${workspaceFolder}/node_modules/.bin/jest --runInBand --config ./test/jest-e2e.config.ts",
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "NODE_ENV": "test"
+        },
+        "sourceMaps": true,
+        "outFiles": [
+          "${workspaceFolder}/dist/**/*"
+        ]
       }
     ]
 }

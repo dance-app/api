@@ -17,6 +17,7 @@ export class ChangePasswordDto {
     description: 'Current password that will be changed',
     example: MOCK_USER.JOHN.password,
   })
+  @MinLength(8)
   @IsString()
   newPassword: string;
 
@@ -25,6 +26,5 @@ export class ChangePasswordDto {
     example: MOCK_USER.JOHN.password,
   })
   @IsString()
-  @MinLength(8)
   currentPassword: string;
 }

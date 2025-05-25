@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
-import { MemberService } from '@/member/member.service';
-import { UserService } from '@/user/user.service';
 
 import { WorkspaceController } from './workspace.controller';
 import { WorkspaceService } from './workspace.service';
+
+import { MemberService } from '@/member/member.service';
+import { UserService } from '@/user/user.service';
 
 @Module({
   controllers: [WorkspaceController],

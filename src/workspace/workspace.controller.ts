@@ -7,13 +7,18 @@ import {
   Param,
   Delete,
   UseGuards,
-  NotFoundException,
-  ParseIntPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { User, WorkspaceRole } from '@prisma/client';
 
 import { WorkspaceDto } from './dto';
-import { CanViewWorkspaceGuard } from './guard';
+import { CreateWorkspaceDto } from './dto/create-workspace.dto';
+import {
+  CanViewWorkspaceGuard,
+  RequireWorkspaceRoles,
+  WorkspaceRolesGuard,
+} from './guard';
 import { WorkspaceService } from './workspace.service';
 
 import { GetAuthUser } from '@/auth/decorator';
@@ -21,7 +26,6 @@ import { JwtGuard } from '@/auth/guard';
 import { MemberService } from '@/member/member.service';
 import { GetPagination } from '@/pagination/decorator';
 import { PaginationDto } from '@/pagination/dto';
-import { UserDto } from '@/user/dto';
 import { UserService } from '@/user/user.service';
 import { UserWithAccount } from '@/user/user.types';
 
@@ -35,103 +39,57 @@ export class WorkspaceController {
     private userService: UserService,
   ) {}
 
-  @Post('')
-  create(@Body() data: WorkspaceDto) {
-    return this.workspaceService.create(data);
+  @Post()
+  async create(@Body() data: CreateWorkspaceDto, @GetAuthUser() user: User) {
+    // If ownerId is provided and user is super admin, create workspace for that user
+    if (user.isSuperAdmin) {
+      return await this.workspaceService.createWithOwner(
+        data,
+        user.id, // createdById (super admin)
+        data.ownerId, // ownerId (the assigned owner)
+      );
+    }
+    if (data.ownerId !== undefined && data.ownerId !== user.id)
+      throw new BadRequestException();
+
+    // Regular case - user creates their own workspace
+    return await this.workspaceService.create(data, user.id);
   }
 
-  @Get('')
-  getAll(@GetPagination() paginationOptions: PaginationDto) {
-    return this.workspaceService.readAll(paginationOptions);
-  }
-
-  @Get('mine')
-  getMyWorkspace(@GetAuthUser() user: UserWithAccount) {
-    return this.workspaceService.readMyWorkspaces({ user });
+  @Get()
+  async getAll(
+    @GetAuthUser() user: UserWithAccount,
+    @GetPagination() paginationOptions: PaginationDto,
+  ) {
+    if (user.isSuperAdmin) {
+      return await this.workspaceService.readAll(paginationOptions);
+    }
+    return await this.workspaceService.readMyWorkspaces(user);
   }
 
   @Get('slug/:slug')
   @UseGuards(CanViewWorkspaceGuard)
-  getBySlug(@Param('slug') slug: string) {
-    return this.workspaceService.readBySlug({ slug });
+  async getBySlug(@Param('slug') slug: string) {
+    return await this.workspaceService.getWorkspaceBySlug(slug);
   }
-
-  @Get('slug/:slug/members')
-  @UseGuards(CanViewWorkspaceGuard)
-  async getWorkspaceMembers(
-    @Param('slug') slug: string,
-    @GetPagination() paginationOptions: PaginationDto,
-  ) {
-    const workspaceResponse = await this.workspaceService.readBySlug({ slug });
-
-    if (!workspaceResponse?.data?.id)
-      throw new NotFoundException('Workspace not found');
-
-    const memberResponse = await this.memberService.readAll(
-      workspaceResponse.data.id,
-      paginationOptions,
-    );
-    return memberResponse;
-  }
-
-  @Post('slug/:slug/members')
-  @UseGuards(CanViewWorkspaceGuard)
-  async createWorkspaceMembers(
-    @Param('slug') slug: string,
-    @Body() data: UserDto,
-  ) {
-    // TODO: some kind of invitation based workflow?
-    /*const newUserResponse = await this.userService.create({
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      password: null,
-      isSuperAdmin: false,
-      isVerified: false,
-    });
-    const workspace = await this.workspaceService.readBySlug({ slug });
-    await this.userService.linkWorkspace(newUserResponse.id, workspace.data.id);
-    return newUserResponse;*/
-  }
-
-  @Get('slug/:slug/members/:memberId')
-  @UseGuards(CanViewWorkspaceGuard)
-  async readWorkspaceMember(
-    // @Param('slug') slug: string,
-    @Param('memberId', ParseIntPipe) memberId: number,
-  ) {
-    const userResponse = await this.userService.readById({
-      id: memberId,
-    });
-    return userResponse;
-  }
-
-  // @Patch('slug/:slug/members/:memberId')
-  // @UseGuards(CanViewWorkspaceGuard)
-  // async updateWorkspaceMember(
-  //   // @Param('slug') slug: string,
-  //   @Param('memberId', ParseIntPipe) memberId: number,
-  //   @Body() data: UserDto,
-  // ) {
-  //   const userResponse = await this.userService.update(memberId, data);
-  //   return userResponse;
-  // }
 
   @Get(':id')
   @UseGuards(CanViewWorkspaceGuard)
-  getById(@Param('id') id: string) {
-    return this.workspaceService.readById({ id: Number(id) });
+  async getById(@Param('id') id: string) {
+    return await this.workspaceService.readById({ id: Number(id) });
   }
 
   @Patch(':id')
-  @UseGuards(CanViewWorkspaceGuard)
-  update(@Param('id') id: string, @Body() data: WorkspaceDto) {
-    return this.workspaceService.update(Number(id), data);
+  @UseGuards(CanViewWorkspaceGuard, WorkspaceRolesGuard)
+  @RequireWorkspaceRoles(WorkspaceRole.OWNER)
+  async update(@Param('id') id: string, @Body() data: WorkspaceDto) {
+    return await this.workspaceService.update(Number(id), data);
   }
 
   @Delete(':id')
-  @UseGuards(CanViewWorkspaceGuard)
-  delete(@Param('id') id: string) {
-    return this.workspaceService.delete(Number(id));
+  @UseGuards(CanViewWorkspaceGuard, WorkspaceRolesGuard)
+  @RequireWorkspaceRoles(WorkspaceRole.OWNER)
+  async delete(@Param('id') id: string) {
+    return await this.workspaceService.delete(Number(id));
   }
 }

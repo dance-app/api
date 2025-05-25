@@ -1,0 +1,42 @@
+{{#> layouts/main title="Event Invitation: {{eventName}}"}}
+<p>Hi {{inviteeFirstName}},</p>
+
+<p>{{inviterName}} has invited you to attend <strong>{{eventName}}</strong>.</p>
+
+<div class="event-details">
+  <p><strong>Date & Time:</strong> {{eventDate}} at {{eventTime}} {{timeZone}}</p>
+  <p><strong>Location:</strong> {{eventLocation}}</p>
+  {{#if eventDescription}}
+  <p><strong>Description:</strong> {{eventDescription}}</p>
+  {{/if}}
+  {{#if additionalInfo}}
+  <p><strong>Additional Information:</strong> {{additionalInfo}}</p>
+  {{/if}}
+</div>
+
+<div class="action-buttons">
+  {{> partials/button url=acceptUrl text="Accept Invitation" color="#4CAF50"}}
+  {{> partials/button url=viewDetailsUrl text="View Event Details" color="#2196F3"}}
+  {{#if declineUrl}}
+  {{> partials/button url=declineUrl text="Decline" color="#9E9E9E"}}
+  {{/if}}
+</div>
+
+{{#if calendarLinks}}
+<p>Add to your calendar:</p>
+<div class="calendar-links">
+  {{#each calendarLinks}}
+  <a href="{{this.url}}">{{this.provider}}</a>{{#unless @last}} | {{/unless}}
+  {{/each}}
+</div>
+{{/if}}
+
+<p class="note">If you're having trouble with the buttons above, you can copy and paste these links into your browser:</p>
+<p>Accept: {{acceptUrl}}</p>
+<p>View Details: {{viewDetailsUrl}}</p>
+{{#if declineUrl}}
+<p>Decline: {{declineUrl}}</p>
+{{/if}}
+
+<p class="footer-note">This invitation was sent to {{inviteeEmail}}. If you received this by mistake, please ignore this email.</p>
+{{/layouts/main}}

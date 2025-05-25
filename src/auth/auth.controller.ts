@@ -12,7 +12,12 @@ import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 import { AuthService } from './auth.service';
 import { GetAuthUser } from './decorator';
-import { RefreshTokenDto, SignInDto, SignInResponseDto, SignUpDto } from './dto';
+import {
+  RefreshTokenDto,
+  SignInDto,
+  SignInResponseDto,
+  SignUpDto,
+} from './dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';

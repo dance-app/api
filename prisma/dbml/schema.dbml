@@ -1,0 +1,265 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table users {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  firstName String
+  lastName String
+  token String
+  isSuperAdmin Boolean
+  accounts accounts [not null]
+  workspaces members [not null]
+  notifications Notification [not null]
+  notificationPreferences NotificationPreferences
+  sentInvitations invitations [not null]
+  receivedInvitations invitations [not null]
+  createdWorkspaces workspaces [not null]
+  createdMembers members [not null]
+}
+
+Table NotificationPreferences {
+  id Int [pk, increment]
+  userId Int [unique, not null]
+  emailNotificationsEnabled Boolean [not null, default: true]
+  user users [not null]
+}
+
+Table accounts {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  provider AccountProvider [not null]
+  email String [not null]
+  password String
+  isEmailVerified Boolean
+  user users [not null]
+  userId Int [not null]
+  resetToken password_reset_tokens
+  emailToken email_confirmation_tokens
+}
+
+Table password_reset_tokens {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  expiresAt DateTime [not null]
+  token String [unique, not null]
+  account accounts [not null]
+  accountId Int [unique, not null]
+}
+
+Table email_confirmation_tokens {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  expiresAt DateTime [not null]
+  token String [unique, not null]
+  account accounts [not null]
+  accountId Int [unique, not null]
+}
+
+Table workspaces {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  createdById Int [not null]
+  createdBy users [not null]
+  name String [not null]
+  slug String [unique, not null]
+  configuration workspaceConfig
+  members members [not null]
+  events events [not null]
+  invitations invitations [not null]
+}
+
+Table workspaceConfig {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  weekStart WeekStart [not null]
+  workspace workspaces [not null]
+  workspaceId Int [unique, not null]
+}
+
+Table members {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  createdById Int [not null]
+  createdBy users [not null]
+  user users
+  userId Int
+  name String
+  workspace workspaces [not null]
+  workspaceId Int [not null]
+  attendances attendees [not null]
+  roles WorkspaceRole[] [not null]
+  level Int
+  preferedDanceRole DanceRole
+  invitation invitations
+}
+
+Table events {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  name String [not null]
+  description String
+  dateStart DateTime [not null]
+  dateEnd DateTime
+  location String
+  capacityMin Int
+  capacityMax Int
+  leaderOffset Int [default: 0]
+  followerOffset Int [default: 0]
+  rule String[] [not null]
+  attendees attendees [not null]
+  invitations invitations [not null]
+  organizer workspaces [not null]
+  organizerId Int [not null]
+}
+
+Table attendees {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  role DanceRole
+  type AttendanceType [not null, default: 'WAITING']
+  member members [not null]
+  memberId Int [not null]
+  event events [not null]
+  eventId Int [not null]
+  invitation invitations
+
+  indexes {
+    (memberId, eventId) [unique]
+  }
+}
+
+Table Notification {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  user users [not null]
+  userId Int [not null]
+  type NotificationType [not null]
+  read Boolean [not null, default: false]
+  invitation invitations
+  invitationId Int
+}
+
+Table invitations {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  type InviteType [not null]
+  email String
+  firstName String
+  lastName String
+  token String [unique, not null]
+  expiresAt DateTime [not null]
+  status InvitationStatus [not null, default: 'PENDING']
+  workspace workspaces
+  workspaceId Int
+  inviter users [not null]
+  inviterId Int [not null]
+  invitee users
+  inviteeId Int
+  memberSeatId Int [unique]
+  memberSeat members
+  event events
+  eventId Int
+  attendeeSeatId Int [unique]
+  attendeeSeat attendees
+  notifications Notification [not null]
+}
+
+Enum AccountProvider {
+  LOCAL
+  GOOGLE
+  FACEBOOK
+}
+
+Enum InviteType {
+  WORKSPACE
+  EVENT
+}
+
+Enum WeekStart {
+  SUNDAY
+  MONDAY
+  SATURDAY
+}
+
+Enum AttendanceType {
+  VALIDATE
+  WAITING
+}
+
+Enum DanceRole {
+  LEADER
+  FOLLOWER
+}
+
+Enum WorkspaceRole {
+  OWNER
+  TEACHER
+  STUDENT
+}
+
+Enum MemberStatus {
+  ACTIVE
+  DEACTIVATED
+}
+
+Enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+Enum NotificationType {
+  INVITATION_RECEIVED
+  WORKSPACE_MEMBER_JOINED
+}
+
+Ref: NotificationPreferences.userId - users.id [delete: Cascade]
+
+Ref: accounts.userId > users.id
+
+Ref: password_reset_tokens.accountId - accounts.id [delete: Cascade]
+
+Ref: email_confirmation_tokens.accountId - accounts.id [delete: Cascade]
+
+Ref: workspaces.createdById > users.id
+
+Ref: workspaceConfig.workspaceId - workspaces.id
+
+Ref: members.createdById > users.id
+
+Ref: members.userId > users.id
+
+Ref: members.workspaceId > workspaces.id
+
+Ref: events.organizerId > workspaces.id
+
+Ref: attendees.memberId > members.id
+
+Ref: attendees.eventId > events.id
+
+Ref: Notification.userId > users.id
+
+Ref: Notification.invitationId > invitations.id
+
+Ref: invitations.workspaceId > workspaces.id
+
+Ref: invitations.inviterId > users.id
+
+Ref: invitations.inviteeId > users.id
+
+Ref: invitations.memberSeatId - members.id
+
+Ref: invitations.eventId > events.id
+
+Ref: invitations.attendeeSeatId - attendees.id

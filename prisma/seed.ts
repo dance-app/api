@@ -50,6 +50,7 @@ async function main() {
     firstName: MOCK_USER.JOHN.firstName,
     lastName: MOCK_USER.JOHN.lastName,
     email: MOCK_USER.JOHN.email,
+    password: MOCK_USER.JOHN.password,
     isSuperAdmin: MOCK_USER.JOHN.isSuperAdmin,
   });
 
@@ -57,6 +58,7 @@ async function main() {
     firstName: MOCK_USER.JANE.firstName,
     lastName: MOCK_USER.JANE.lastName,
     email: MOCK_USER.JANE.email,
+    password: MOCK_USER.JANE.password,
     isSuperAdmin: MOCK_USER.JANE.isSuperAdmin,
   });
 
@@ -73,15 +75,24 @@ async function main() {
     data: {
       name: 'Studio A',
       slug: 'studio-a',
+      createdById: ownerA.id,
       configuration: { create: { weekStart: WeekStart.MONDAY } },
       members: {
-        create: [{ userId: ownerA.id, roles: [WorkspaceRole.OWNER] }],
+        createMany: {
+          data: [
+            {
+              userId: ownerA.id,
+              createdById: ownerA.id,
+              roles: [WorkspaceRole.OWNER],
+            },
+          ],
+        },
       },
     },
   });
 
   // 3 random members in workspace A
-  const membersA = await Promise.all(
+  const usersA = await Promise.all(
     Array.from({ length: 3 }).map(() =>
       createUser({
         firstName: faker.person.firstName(),
@@ -90,9 +101,10 @@ async function main() {
       }),
     ),
   );
-  await prisma.member.createMany({
-    data: membersA.map((m) => ({
+  const membersA = await prisma.member.createManyAndReturn({
+    data: usersA.map((m) => ({
       userId: m.id,
+      createdById: ownerA.id,
       workspaceId: workspaceA.id,
       roles: [WorkspaceRole.STUDENT],
     })),
@@ -115,7 +127,7 @@ async function main() {
     // every student attends
     await prisma.attendee.createMany({
       data: membersA.map((m, idx) => ({
-        userId: m.id,
+        memberId: m.id,
         eventId: event.id,
         role: idx % 2 === 0 ? DanceRole.LEADER : DanceRole.FOLLOWER,
         type: AttendanceType.VALIDATE,
@@ -136,9 +148,16 @@ async function main() {
     data: {
       name: 'Studio B',
       slug: 'studio-b',
+      createdById: ownerB.id,
       configuration: { create: { weekStart: WeekStart.SUNDAY } },
       members: {
-        create: [{ userId: ownerB.id, roles: [WorkspaceRole.OWNER] }],
+        create: [
+          {
+            userId: ownerB.id,
+            createdById: ownerB.id,
+            roles: [WorkspaceRole.OWNER],
+          },
+        ],
       },
     },
   });
@@ -156,6 +175,7 @@ async function main() {
   await prisma.member.createMany({
     data: membersB.map((m) => ({
       userId: m.id,
+      createdById: ownerB.id,
       workspaceId: workspaceB.id,
       roles: [WorkspaceRole.STUDENT],
     })),

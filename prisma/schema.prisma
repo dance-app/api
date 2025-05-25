@@ -5,6 +5,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator dbml {
+  provider = "prisma-dbml-generator"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -25,10 +29,26 @@ model User {
   isSuperAdmin Boolean?
 
   accounts Account[]
-  workspaces Member[]
-  attendances Attendee[]
+  workspaces Member[] @relation("workspaces")
+  
+  notifications Notification[]
+  notificationPreferences NotificationPreferences?
+
+  sentInvitations     Invitation[] @relation("sentInvitations")
+  receivedInvitations Invitation[] @relation("receivedInvitations")
+
+  createdWorkspaces Workspace[]
+  createdMembers Member[] @relation("createdMembers")
 
   @@map("users")
+}
+
+model NotificationPreferences {
+  id                      Int     @id @default(autoincrement())
+  userId                  Int     @unique
+  emailNotificationsEnabled Boolean @default(true)
+  
+  user                    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Account {
@@ -80,6 +100,9 @@ model Workspace {
   id Int @id @default(autoincrement())
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  
+  createdById Int // ID of the user who created this workspace
+  createdBy User @relation(fields: [createdById], references: [id])
 
   name String
   slug String @unique
@@ -87,6 +110,7 @@ model Workspace {
   configuration WorkspaceConfig?
   members Member[]
   events Event[]
+  invitations Invitation[]
 
   @@map("workspaces")
 }
@@ -105,15 +129,32 @@ model WorkspaceConfig {
 }
 
 model Member {
-  user User @relation(fields: [userId], references: [id])
-  userId Int
+  id Int @id @default(autoincrement())
 
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  
+  createdById Int // ID of the user who added the member to the workspace
+  createdBy User @relation(name: "createdMembers", fields: [createdById], references: [id])
+
+
+  user User? @relation(name: "workspaces", fields: [userId], references: [id])
+  userId Int?
+
+  name String? // Can be empty if the user exists, required if user is null, by default, overrided by user.firstName + user.lastName
+  
   workspace Workspace @relation(fields: [workspaceId], references: [id])
   workspaceId Int
 
+  attendances Attendee[]
+
   roles WorkspaceRole[]
 
-  @@id([userId, workspaceId])
+  level Int?
+  preferedDanceRole DanceRole? // leave empty if there is no preference?
+
+  invitation Invitation? @relation("invitation") // invited through this invitatino
+
   @@map("members")
 }
 
@@ -121,6 +162,11 @@ model Event {
   id Int @id @default(autoincrement())
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  //createdById Int 
+  //createdBy User 
+  // managedById Int
+  // managedBy Member
 
   name String
   description String?
@@ -136,6 +182,8 @@ model Event {
 
   attendees Attendee[]
 
+  invitations Invitation[]
+
   organizer Workspace @relation(fields: [organizerId], references: [id])
   organizerId Int
 
@@ -143,17 +191,92 @@ model Event {
 }
 
 model Attendee {
-  role DanceRole
-  type AttendanceType
+  id          Int           @id @default(autoincrement())
 
-  user User @relation(fields: [userId], references: [id])
-  userId Int
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  role DanceRole?
+  type AttendanceType @default(WAITING)
+
+  member Member @relation(fields: [memberId], references: [id])
+  memberId Int
 
   event Event @relation(fields: [eventId], references: [id])
   eventId Int
 
-  @@id([userId, eventId])
+  invitation Invitation? @relation("invitation") // invited through this invitatino
+
+  @@unique([memberId, eventId])
   @@map("attendees")
+}
+
+model Notification {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  
+  user User @relation(fields: [userId], references: [id]) 
+  userId Int
+  
+  type        NotificationType // Using an enum now
+  
+  read        Boolean          @default(false)
+
+  // Specific relationships
+  invitation   Invitation? @relation(fields: [invitationId], references: [id])
+  invitationId Int?
+  
+  // Future relationships could be added here
+  // event        Event?      @relation(fields: [eventId], references: [id])
+  // eventId      Int?
+  // member       Member?     @relation(fields: [memberId], references: [id])
+  // memberId     Int?
+
+  @@index([userId])
+  @@index([type])
+  @@index([read])
+}
+
+
+model Invitation {
+  id          Int           @id @default(autoincrement())
+  createdAt   DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime      @updatedAt @db.Timestamptz(3)
+
+  type InviteType
+
+  email       String?       // Optional - if inviting by email
+  firstName        String?       // Optional - for placeholder invitations
+  lastName        String?       // Optional - for placeholder invitations
+
+  token       String        @unique @db.Uuid
+  expiresAt   DateTime      @db.Timestamptz(3)
+  status      InvitationStatus @default(PENDING)
+  
+  // Relation to workspace being invited to
+  workspace   Workspace?     @relation(fields: [workspaceId], references: [id])
+  workspaceId Int?
+  
+  // Who sent the invitation
+  inviter     User          @relation("sentInvitations", fields: [inviterId], references: [id])
+  inviterId   Int
+  
+  invitee     User?         @relation("receivedInvitations", fields: [inviteeId], references: [id])
+  inviteeId   Int?
+  
+  memberSeatId Int? @unique // The member the invitee will be linked with when he accepts the invitation
+  memberSeat Member? @relation("invitation", fields: [memberSeatId], references: [id])
+  
+  event   Event?     @relation(fields: [eventId], references: [id])
+  eventId Int?
+
+  attendeeSeatId Int? @unique // The attendee the invitee will be linked with when he accepts the invitation
+  attendeeSeat Attendee? @relation("invitation", fields: [attendeeSeatId], references: [id])
+  
+  notifications Notification[] // notifications related to this invitation (received, accepted, declined, ...)
+  
+  @@map("invitations")
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -164,6 +287,11 @@ enum AccountProvider {
   LOCAL
   GOOGLE
   FACEBOOK
+}
+
+enum InviteType {
+  WORKSPACE
+  EVENT
 }
 
 // Inspired by https://developers.google.com/calendar/api/v3/reference/settings
@@ -193,4 +321,16 @@ enum WorkspaceRole {
 enum MemberStatus {
   ACTIVE
   DEACTIVATED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum NotificationType {
+  INVITATION_RECEIVED
+  WORKSPACE_MEMBER_JOINED
+  // Add other types as needed
 }

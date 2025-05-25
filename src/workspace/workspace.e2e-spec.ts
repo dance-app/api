@@ -30,6 +30,7 @@ describe.skip('Workspace CRUD', () => {
     slug: 'test-workspace',
     createdAt: new Date(),
     updatedAt: new Date(),
+    createdById: 0,
   };
 
   it('create 201', () => {

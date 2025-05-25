@@ -7,8 +7,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategy';
 
-import { UserService } from '@/user/user.service';
 import { MailModule } from '@/mail/mail.module';
+import { UserService } from '@/user/user.service';
 
 @Module({
   imports: [
