@@ -18,7 +18,7 @@ import { WorkspaceModule } from './workspace/workspace.module';
     EventEmitterModule.forRoot(),
     AuthModule,
     ConfigModule.forRoot({
-      envFilePath: [`.${process.env.NODE_ENV || 'development'}.env`],
+      envFilePath: [`.env.${process.env.NODE_ENV || 'dev'}`],
       validate,
       isGlobal: true,
     }),
