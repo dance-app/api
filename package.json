@@ -12,7 +12,7 @@
     "db:dev:generate": "npx prisma generate",
     "db:dev:deploy": "prisma migrate deploy",
     "db:dev:migrate": "npx prisma migrate dev",
-    "db:dev:reset": "npx prisma migrate reset --force && pnpm run seed",
+    "db:dev:reset": "dotenv -e .env.dev -- npx prisma migrate reset --force && dotenv -e .env.dev -- pnpm run seed",
     "db:dev:kill": "docker compose rm dev-db -s -f -v",
     "db:dev:restart": "yarn db:dev:kill && yarn db:dev:start && sleep 1 && yarn db:dev:deploy",
     "db:dev:start": "docker compose up dev-db -d",
