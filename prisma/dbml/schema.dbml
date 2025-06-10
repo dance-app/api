@@ -80,6 +80,7 @@ Table workspaceConfig {
   weekStart WeekStart [not null]
   workspace workspaces [not null]
   workspaceId Int [unique, not null]
+  danceTypes dance_types [not null]
 }
 
 Table members {
@@ -98,6 +99,7 @@ Table members {
   level Int
   preferedDanceRole DanceRole
   invitation invitations
+  preferredDanceTypes dance_types [not null]
 }
 
 Table events {
@@ -118,6 +120,7 @@ Table events {
   invitations invitations [not null]
   organizer workspaces [not null]
   organizerId Int [not null]
+  danceTypes dance_types [not null]
 }
 
 Table attendees {
@@ -175,6 +178,34 @@ Table invitations {
   notifications Notification [not null]
 }
 
+Table dance_types {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  name String [unique, not null]
+  type DanceTypeEnum [not null]
+  category DanceCategory
+  description String
+  events events [not null]
+  memberPreferences members [not null]
+  workspaceConfigs workspaceConfig [not null]
+}
+
+Table workspaceDanceTypes {
+  dancetypesId Int [ref: > dance_types.id]
+  workspaceconfigsId Int [ref: > workspaceConfig.id]
+}
+
+Table memberDanceTypePreferences {
+  preferreddancetypesId Int [ref: > dance_types.id]
+  memberpreferencesId Int [ref: > members.id]
+}
+
+Table eventDanceTypes {
+  dancetypesId Int [ref: > dance_types.id]
+  eventsId Int [ref: > events.id]
+}
+
 Enum AccountProvider {
   LOCAL
   GOOGLE
@@ -222,6 +253,45 @@ Enum InvitationStatus {
 Enum NotificationType {
   INVITATION_RECEIVED
   WORKSPACE_MEMBER_JOINED
+}
+
+Enum DanceCategory {
+  LATIN
+  BALLROOM
+  SWING
+  FOLK
+  COUNTRY
+  CONTEMPORARY
+  OTHER
+}
+
+Enum DanceTypeEnum {
+  SALSA
+  BACHATA
+  KIZOMBA
+  MERENGUE
+  CHA_CHA
+  RUMBA
+  SAMBA
+  WALTZ
+  TANGO
+  QUICKSTEP
+  VIENNESE_WALTZ
+  LINDY_HOP
+  EAST_COAST_SWING
+  WEST_COAST_SWING
+  BALBOA
+  CHARLESTON
+  ARGENTINE_TANGO
+  MILONGA
+  VALS
+  BLUES
+  ZOUK
+  LAMBADA
+  MAMBO
+  CASINO
+  RUEDA
+  OTHER
 }
 
 Ref: NotificationPreferences.userId - users.id [delete: Cascade]

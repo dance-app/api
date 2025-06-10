@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
 import { AuthModule } from './auth/auth.module';
+import { DanceModule } from './dance/dance.module';
 import { DatabaseModule } from './database/database.module';
 import { validate } from './env.validation';
 import { EventModule } from './event/event.module';
@@ -22,6 +23,7 @@ import { WorkspaceModule } from './workspace/workspace.module';
       validate,
       isGlobal: true,
     }),
+    DanceModule,
     DatabaseModule,
     EventModule,
     MemberModule,

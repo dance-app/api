@@ -102,38 +102,37 @@ export class MailModule implements OnModuleInit {
   }
 
   private registerHelpers() {
-    
-    handlebars.registerHelper('extend', function(name, context) {
+    handlebars.registerHelper('extend', function (name, context) {
       let template = handlebars.partials[name];
-      
+
       // Return executed partial
       if (typeof template === 'function') {
         return template(context.data.root);
       }
-      
+
       // Compile string partial to function and execute
       if (typeof template === 'string') {
         template = handlebars.compile(template);
         handlebars.partials[name] = template;
         return template(context.data.root);
       }
-      
+
       return '';
     });
-    
+
     // Block helper
-    handlebars.registerHelper('block', function(name, options) {
+    handlebars.registerHelper('block', function (name, options) {
       const block = this.blocks || (this.blocks = {});
       block[name] = options.fn;
       return null;
     });
-    
+
     // Content helper
-    handlebars.registerHelper('content', function(name, options) {
+    handlebars.registerHelper('content', function (name, options) {
       const block = this.blocks || (this.blocks = {});
       return block[name] ? block[name](this) : options.fn(this);
     });
-    
+
     handlebars.registerHelper('formatDate', function (date) {
       // Simple date formatting example
       const d = date instanceof Date ? date : new Date(date);

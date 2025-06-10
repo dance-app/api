@@ -88,6 +88,9 @@ export class WorkspaceService {
           },
         },
       },
+      include: {
+        configuration: true,
+      },
     });
     return {
       data: result,

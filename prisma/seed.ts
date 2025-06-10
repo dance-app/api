@@ -6,6 +6,8 @@ import {
   WorkspaceRole,
   DanceRole,
   AttendanceType,
+  DanceTypeEnum,
+  DanceCategory,
 } from '@prisma/client';
 import * as argon2 from 'argon2';
 
@@ -71,12 +73,52 @@ async function main() {
     email: 'alice.admin@studio-a.com',
   });
 
+  // Create 5 dance types first
+  const danceTypes = await prisma.danceType.createManyAndReturn({
+    data: [
+      {
+        name: 'Salsa',
+        type: DanceTypeEnum.SALSA,
+        category: DanceCategory.LATIN,
+        description: 'A lively Latin dance with Cuban origins',
+      },
+      {
+        name: 'Bachata',
+        type: DanceTypeEnum.BACHATA,
+        category: DanceCategory.LATIN,
+        description: 'A romantic Latin dance from the Dominican Republic',
+      },
+      {
+        name: 'Kizomba',
+        type: DanceTypeEnum.KIZOMBA,
+        category: DanceCategory.LATIN,
+        description: 'A sensual dance from Angola',
+      },
+      {
+        name: 'Tango',
+        type: DanceTypeEnum.TANGO,
+        category: DanceCategory.BALLROOM,
+        description: 'A passionate ballroom dance from Argentina',
+      },
+      {
+        name: 'Waltz',
+        type: DanceTypeEnum.WALTZ,
+        category: DanceCategory.BALLROOM,
+        description: 'An elegant ballroom dance in 3/4 time',
+      },
+    ],
+  });
+
   const workspaceA = await prisma.workspace.create({
     data: {
       name: 'Studio A',
       slug: 'studio-a',
       createdById: ownerA.id,
-      configuration: { create: { weekStart: WeekStart.MONDAY } },
+      configuration: {
+        create: {
+          weekStart: WeekStart.MONDAY,
+        },
+      },
       members: {
         createMany: {
           data: [
@@ -90,6 +132,15 @@ async function main() {
       },
     },
   });
+
+  // Connect dance types to workspace A's configuration
+  await prisma.$executeRaw`
+    INSERT INTO "_workspaceDanceTypes" ("A", "B")
+    SELECT dt.id, wc.id 
+    FROM "dance_types" dt, "workspaceConfig" wc 
+    WHERE wc."workspaceId" = ${workspaceA.id}
+    AND dt.id IN (${danceTypes[0].id}, ${danceTypes[1].id}, ${danceTypes[2].id}, ${danceTypes[3].id}, ${danceTypes[4].id})
+  `;
 
   // 3 random members in workspace A
   const usersA = await Promise.all(

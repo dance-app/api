@@ -125,6 +125,8 @@ model WorkspaceConfig {
   workspace Workspace @relation(fields: [workspaceId], references: [id])
   workspaceId Int @unique
 
+  danceTypes DanceType[] @relation("workspaceDanceTypes")
+
   @@map("workspaceConfig")
 }
 
@@ -136,7 +138,6 @@ model Member {
   
   createdById Int // ID of the user who added the member to the workspace
   createdBy User @relation(name: "createdMembers", fields: [createdById], references: [id])
-
 
   user User? @relation(name: "workspaces", fields: [userId], references: [id])
   userId Int?
@@ -154,6 +155,9 @@ model Member {
   preferedDanceRole DanceRole? // leave empty if there is no preference?
 
   invitation Invitation? @relation("invitation") // invited through this invitatino
+
+  // Dance preferences
+  preferredDanceTypes DanceType[] @relation("memberDanceTypePreferences")
 
   @@map("members")
 }
@@ -186,6 +190,9 @@ model Event {
 
   organizer Workspace @relation(fields: [organizerId], references: [id])
   organizerId Int
+
+  // Dance classification
+  danceTypes DanceType[] @relation("eventDanceTypes")
 
   @@map("events")
 }
@@ -279,6 +286,29 @@ model Invitation {
   @@map("invitations")
 }
 
+model DanceType {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  name String @unique
+  type DanceTypeEnum
+  category DanceCategory?
+  description String?
+
+  // Events can reference dance types
+  events Event[] @relation("eventDanceTypes")
+  
+  // Members can have preferred dance types
+  memberPreferences Member[] @relation("memberDanceTypePreferences")
+  
+  // Workspace that offers this dance type
+  workspaceConfigs WorkspaceConfig[] @relation("workspaceDanceTypes")
+
+  @@map("dance_types")
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Enums
 ////////////////////////////////////////////////////////////////////////////////
@@ -333,4 +363,43 @@ enum NotificationType {
   INVITATION_RECEIVED
   WORKSPACE_MEMBER_JOINED
   // Add other types as needed
+}
+
+enum DanceCategory {
+  LATIN
+  BALLROOM
+  SWING
+  FOLK
+  COUNTRY
+  CONTEMPORARY
+  OTHER
+}
+
+enum DanceTypeEnum {
+  SALSA
+  BACHATA
+  KIZOMBA
+  MERENGUE
+  CHA_CHA
+  RUMBA
+  SAMBA
+  WALTZ
+  TANGO
+  QUICKSTEP
+  VIENNESE_WALTZ
+  LINDY_HOP
+  EAST_COAST_SWING
+  WEST_COAST_SWING
+  BALBOA
+  CHARLESTON
+  ARGENTINE_TANGO
+  MILONGA
+  VALS
+  BLUES
+  ZOUK
+  LAMBADA
+  MAMBO
+  CASINO
+  RUEDA
+  OTHER
 }
