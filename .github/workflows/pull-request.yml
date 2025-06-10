@@ -2,6 +2,7 @@ name: Pull request check 👀
 run-name: ${{ github.actor }} wants to merge
 
 on:
+  push:
   pull_request:
     branches:
       - main
@@ -29,3 +30,6 @@ jobs:
 
       - name: Check lint & formatting 👀
         run: pnpm run lint && pnpm run format
+
+      - name: Check types 🔍
+        run: pnpm run typescript
