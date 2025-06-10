@@ -29,7 +29,7 @@ jobs:
         run: pnpm install
 
       - name: Check lint & formatting 👀
-        run: pnpm run lint && pnpm run format
+        run: pnpm run lint:check && pnpm run format:check
 
       - name: Check types 🔍
         run: pnpm run typescript

@@ -21,7 +21,6 @@ import {
 import {
   createWorkspaceWithNoOwnerTest,
   signInTest,
-  verifyEmailTest,
   createWorkspaceSeatTest,
   sendWorkspaceInviteTest,
   signUpTest,

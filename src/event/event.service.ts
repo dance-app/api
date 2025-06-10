@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { CreateEventDto } from './dto';
 
 import { DatabaseService } from '@/database/database.service';
-import { PaginationDto, PaginationQuery } from '@/pagination/dto';
+import { PaginationDto } from '@/pagination/dto';
 import { PaginationService } from '@/pagination/pagination.service';
 
 @Injectable({})

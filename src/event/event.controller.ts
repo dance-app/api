@@ -15,7 +15,7 @@ import { EventService } from './event.service';
 
 import { JwtGuard } from '@/auth/guard';
 import { GetPagination } from '@/pagination/decorator';
-import { PaginationDto, PaginationQuery } from '@/pagination/dto';
+import { PaginationDto } from '@/pagination/dto';
 
 @ApiBearerAuth()
 @Controller('events')
