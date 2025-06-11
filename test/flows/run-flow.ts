@@ -3,21 +3,21 @@ export type FlowStep = {
   test: () => Promise<void>;
 };
 
-export function setupTestSteps(steps: FlowStep[]) {
+export function setupSequentialFlow(steps: FlowStep[]) {
+  let failedStep = null;
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
 
     it(`Step ${i + 1}: ${step.name}`, async () => {
-      // Skip if previous step failed
-      // TODO: this doesn't work
-      if (i > 0) {
-        const previousTestInfo = expect.getState().currentTestName;
-        if (previousTestInfo?.includes('failed')) {
-          return Promise.reject('Previous test failed');
-        }
+      if (failedStep !== null) {
+        throw new Error(`Skipped due to previous failure in: ${failedStep}`);
       }
-
-      await step.test();
+      try {
+        await step.test();
+      } catch (error) {
+        failedStep = i + 1;
+        throw error;
+      }
     });
   }
 }

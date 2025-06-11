@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { InvitationStatus, InviteType } from '@prisma/client';
 
-export class ReadInvitationDto {
+class BaseReadInvitationDto {
   @ApiProperty({ description: 'Unique identifier for the invitation' })
   id: number;
 
@@ -39,15 +39,6 @@ export class ReadInvitationDto {
   })
   status: InvitationStatus;
 
-  @ApiProperty({ description: 'ID of the workspace' })
-  workspaceId: number;
-
-  @ApiProperty({ description: 'Name of the workspace' })
-  workspaceName: string;
-
-  @ApiProperty({ description: 'Slug of the workspace' })
-  workspaceSlug: string;
-
   @ApiProperty({ description: 'ID of the user who sent the invitation' })
   inviterId: number;
 
@@ -59,9 +50,32 @@ export class ReadInvitationDto {
       'ID of the user who received the invitation (if existing user)',
   })
   inviteeId?: number;
+}
+export class ReadWorkspaceInvitationDto extends BaseReadInvitationDto {
+  @ApiProperty({ description: 'ID of the workspace' })
+  workspaceId: number;
+
+  @ApiProperty({ description: 'Name of the workspace' })
+  workspaceName: string;
+
+  @ApiProperty({ description: 'Slug of the workspace' })
+  workspaceSlug: string;
 
   @ApiProperty({
     description: 'ID of the member seat reserved for this invitation',
   })
   memberSeatId: number;
+}
+
+export class ReadEventInvitationDto extends BaseReadInvitationDto {
+  @ApiProperty({ description: 'ID of the event' })
+  eventId: number;
+
+  @ApiProperty({ description: 'Name of the event' })
+  eventName: string;
+
+  @ApiProperty({
+    description: 'ID of the attendee seat reserved for this invitation',
+  })
+  attendeeSeatId: number;
 }

@@ -18,6 +18,10 @@ Table users {
   receivedInvitations invitations [not null]
   createdWorkspaces workspaces [not null]
   createdMembers members [not null]
+  createdEvents events [not null]
+  organizedEvents event_organizers [not null]
+  attendances attendees [not null]
+  attendanceUpdates attendance_history [not null]
 }
 
 Table NotificationPreferences {
@@ -93,17 +97,31 @@ Table members {
   name String
   workspace workspaces [not null]
   workspaceId Int [not null]
-  attendances attendees [not null]
   roles WorkspaceRole[] [not null]
   level Int
   preferedDanceRole DanceRole
   invitation invitations
 }
 
+Table event_organizers {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  event events [not null]
+  eventId Int [not null]
+  user users [not null]
+  userId Int [not null]
+
+  indexes {
+    (eventId, userId) [unique]
+  }
+}
+
 Table events {
   id Int [pk, increment]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
+  createdById Int [not null]
+  createdBy users [not null]
   name String [not null]
   description String
   dateStart DateTime [not null]
@@ -113,11 +131,18 @@ Table events {
   capacityMax Int
   leaderOffset Int [default: 0]
   followerOffset Int [default: 0]
-  rule String[] [not null]
+  rrule String
+  parentEventId Int
+  parentEvent events
+  childEvents events [not null]
+  isCancelled Boolean [not null, default: false]
+  cancelledAt DateTime
+  visibility EventVisibility [not null, default: 'WORKSPACE_ONLY']
+  organizers event_organizers [not null]
   attendees attendees [not null]
   invitations invitations [not null]
-  organizer workspaces [not null]
-  organizerId Int [not null]
+  workspace workspaces [not null]
+  workspaceId Int [not null]
 }
 
 Table attendees {
@@ -125,16 +150,28 @@ Table attendees {
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
   role DanceRole
-  type AttendanceType [not null, default: 'WAITING']
-  member members [not null]
-  memberId Int [not null]
+  user users
+  userId Int
+  guestName String
+  guestEmail String
   event events [not null]
   eventId Int [not null]
+  historyEntries attendance_history [not null]
   invitation invitations
 
   indexes {
-    (memberId, eventId) [unique]
+    (eventId, userId, guestEmail) [unique]
   }
+}
+
+Table attendance_history {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  attendee attendees [not null]
+  attendeeId Int [unique, not null]
+  action AttendanceAction [not null]
+  performedBy users [not null]
+  performedById Int [not null]
 }
 
 Table Notification {
@@ -224,6 +261,19 @@ Enum NotificationType {
   WORKSPACE_MEMBER_JOINED
 }
 
+Enum EventVisibility {
+  PUBLIC
+  WORKSPACE_ONLY
+  INVITATION_ONLY
+}
+
+Enum AttendanceAction {
+  REGISTERED
+  CANCELLED
+  DECLINED
+  REMOVED
+}
+
 Ref: NotificationPreferences.userId - users.id [delete: Cascade]
 
 Ref: accounts.userId > users.id
@@ -234,7 +284,7 @@ Ref: email_confirmation_tokens.accountId - accounts.id [delete: Cascade]
 
 Ref: workspaces.createdById > users.id
 
-Ref: workspaceConfig.workspaceId - workspaces.id
+Ref: workspaceConfig.workspaceId - workspaces.id [delete: Cascade]
 
 Ref: members.createdById > users.id
 
@@ -242,11 +292,23 @@ Ref: members.userId > users.id
 
 Ref: members.workspaceId > workspaces.id
 
-Ref: events.organizerId > workspaces.id
+Ref: event_organizers.eventId > events.id [delete: Cascade]
 
-Ref: attendees.memberId > members.id
+Ref: event_organizers.userId > users.id
+
+Ref: events.createdById > users.id
+
+Ref: events.parentEventId - events.id
+
+Ref: events.workspaceId > workspaces.id
+
+Ref: attendees.userId > users.id
 
 Ref: attendees.eventId > events.id
+
+Ref: attendance_history.attendeeId > attendees.id [delete: Cascade]
+
+Ref: attendance_history.performedById > users.id
 
 Ref: Notification.userId > users.id
 

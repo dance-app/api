@@ -44,22 +44,10 @@ export class UserService {
 
   async getById(userId: User['id'], includeAccounts: boolean = false) {
     const user = await this.findById(userId, includeAccounts);
-    if (!!user) {
+    if (!user) {
       throw new NotFoundException('User not found');
     }
-    return {
-      data: user,
-    };
-  }
-
-  async getUserById(userId: User['id']) {
-    const user = await this.database.user.findFirst({
-      where: { id: userId },
-    });
-
-    return {
-      data: user,
-    };
+    return user;
   }
 
   /*async create(data: CreateUserDto) {

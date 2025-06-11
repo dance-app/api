@@ -42,10 +42,10 @@ import {
   acceptInvitationTest,
   getUserWorkspacesTest,
 } from './common-tests';
-import { setupTestSteps } from './run-flow';
+import { setupSequentialFlow } from './run-flow';
 import { AppModule } from '../../src/app.module';
-import { MockMailService } from '../mock-mail.service';
-import { PrismaTestingService } from '../prisma-testing.service';
+import { PrismaTestingService } from '../helpers/prisma-testing.service';
+import { MockMailService } from '../mock-services/mock-mail.service';
 
 import { MailService } from '@/mail/mail.service';
 import { UserWithAccount } from '@/user/user.types';
@@ -104,12 +104,7 @@ describe('Teacher invites unregistered student to workspace', () => {
     await prismaTesting.reset();
 
     // Create teacher user and workspace
-    testState.teacher = await prismaTesting.createUser(
-      mockData.teacher.email,
-      mockData.teacher.password,
-      mockData.teacher.firstName,
-      mockData.teacher.lastName,
-    );
+    testState.teacher = await prismaTesting.createUser(mockData.teacher);
 
     // Sign in teacher to get JWT
     const teacherTokens = await signInTest(
@@ -285,5 +280,5 @@ describe('Teacher invites unregistered student to workspace', () => {
     },
   ];
 
-  setupTestSteps(testSteps);
+  setupSequentialFlow(testSteps);
 });

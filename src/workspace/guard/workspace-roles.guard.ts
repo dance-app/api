@@ -40,14 +40,22 @@ export class WorkspaceRolesGuard implements CanActivate {
 
     // If no user or no slug, deny access
     if (!user || !slug) {
+      this.logger.debug(
+        `Access to workspace with slug '${slug}' was denied for user ${user?.id}`,
+      );
       return false;
     }
     if (user.isSuperAdmin) return true;
     // Check if user has any of the required roles for this workspace
-    return this.memberService.userHasWorkspaceRoles(
+    const hasAccess = this.memberService.userHasWorkspaceRoles(
       slug,
       user.id,
       requiredRoles,
     );
+    if (!hasAccess)
+      this.logger.debug(
+        `Access to workspace with slug '${slug}' was denied for user ${user?.id}. This user doesn't have the required roles: ${requiredRoles}.`,
+      );
+    return hasAccess;
   }
 }

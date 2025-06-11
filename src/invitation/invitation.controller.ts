@@ -18,14 +18,20 @@ import {
 import { Workspace, WorkspaceRole } from '@prisma/client';
 
 import {
+  CreateEventInvitationDto,
   //CreateEventInvitationDto,
   CreateWorkspaceInvitationDto,
 } from './dto/create-invitation.dto';
-import { ReadInvitationDto } from './dto/read-invitation.dto';
+import {
+  ReadEventInvitationDto,
+  ReadWorkspaceInvitationDto,
+} from './dto/read-invitation.dto';
 import { InvitationService } from './invitation.service';
 
 import { GetAuthUser } from '@/auth/decorator';
 import { JwtGuard } from '@/auth/guard';
+import { EventById } from '@/event/decorator/event.decorator';
+import { IsEventOrganizerGuard } from '@/event/guard/is-organizer.guard';
 import { UserWithAccount } from '@/user/user.types';
 import { WorkspaceBySlug } from '@/workspace/decorator/workspace.decorator';
 import {
@@ -42,57 +48,57 @@ export class InvitationController {
   constructor(private readonly invitationService: InvitationService) {}
 
   @Get()
-  @UseGuards(JwtGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all invitations for the current user' })
   @ApiResponse({
     status: 200,
     description: 'List of user invitations',
-    type: [ReadInvitationDto],
+    type: [ReadWorkspaceInvitationDto || ReadEventInvitationDto],
   })
   async getUserInvitations(
-    @GetAuthUser() user: UserWithAccount, // TODO: filter by status?
-  ): Promise<ReadInvitationDto[]> {
+    @GetAuthUser() user: UserWithAccount, // TODO: filter by type & status?
+  ): Promise<(ReadWorkspaceInvitationDto | ReadEventInvitationDto)[]> {
     return this.invitationService.findUserInvitationsDto(user);
   }
 
-  @Post('workspace/:slug')
+  @Post('workspace/:slug') // TODO: slug query param is not used here. It's redundant with the dto
   @UseGuards(CanViewWorkspaceGuard, WorkspaceRolesGuard)
   @RequireWorkspaceRoles(WorkspaceRole.OWNER, WorkspaceRole.TEACHER)
   @ApiOperation({ summary: 'Create a new workspace invitation' })
   @ApiResponse({
     status: 201,
     description: 'Invitation created successfully',
-    type: ReadInvitationDto,
+    type: ReadWorkspaceInvitationDto,
   })
   async createWorkspaceInvitation(
     @GetAuthUser() user: UserWithAccount,
     @Body()
     createInvitationDto: CreateWorkspaceInvitationDto,
-  ): Promise<ReadInvitationDto> {
+  ): Promise<ReadWorkspaceInvitationDto> {
     return await this.invitationService.createWorkspaceInvite(
       user,
       createInvitationDto,
     );
   }
-  /*@Post('event/:slug')
-  @UseGuards(CanViewEventGuard, EventRolesGuard)
-  @RequireEventRoles(EventRole.ORGANIZER)
+  @Post('event/:eventId') // TODO: eventId query param is not used here. It's redundant with the dto
+  @UseGuards(IsEventOrganizerGuard)
   @ApiOperation({ summary: 'Create a new workspace invitation' })
   @ApiResponse({
     status: 201,
     description: 'Invitation created successfully',
-    type: ReadInvitationDto,
+    type: ReadEventInvitationDto,
   })
   async createEventInvitation(
     @GetAuthUser() user: UserWithAccount,
+    @EventById('eventId') event,
     @Body()
     createInvitationDto: CreateEventInvitationDto,
-  ): Promise<ReadInvitationDto> {
-    console.error(createInvitationDto);
-    // TODO
-    //return await this.invitationService.createEventInvite(user, eventDto);
-  }*/
+  ): Promise<ReadEventInvitationDto> {
+    return await this.invitationService.createEventInvite(
+      user,
+      createInvitationDto,
+    );
+  }
 
   @Get('workspace/:slug')
   @UseGuards(CanViewWorkspaceGuard, WorkspaceRolesGuard)
@@ -102,11 +108,11 @@ export class InvitationController {
   @ApiResponse({
     status: 200,
     description: 'List of invitations',
-    type: [ReadInvitationDto],
+    type: [ReadWorkspaceInvitationDto],
   })
   async getWorkspaceInvitations(
     @WorkspaceBySlug() workspace: Workspace,
-  ): Promise<ReadInvitationDto[]> {
+  ): Promise<ReadWorkspaceInvitationDto[]> {
     return this.invitationService.findWorkspaceInvitations(workspace);
   }
 
@@ -116,7 +122,7 @@ export class InvitationController {
   @ApiResponse({
     status: 200,
     description: 'Invitation details',
-    type: ReadInvitationDto,
+    type: ReadWorkspaceInvitationDto || ReadEventInvitationDto,
   })
   async getInvitationByToken(@Param('token') token: string) {
     const invitation = await this.invitationService.getInvitationByToken(token);
@@ -130,12 +136,12 @@ export class InvitationController {
   @ApiResponse({
     status: 200,
     description: 'Invitation accepted',
-    type: ReadInvitationDto,
+    type: ReadWorkspaceInvitationDto || ReadEventInvitationDto,
   })
   async acceptInvitation(
     @Param('token') token: string,
     @GetAuthUser() user: UserWithAccount,
-  ): Promise<ReadInvitationDto> {
+  ): Promise<ReadWorkspaceInvitationDto | ReadEventInvitationDto> {
     return this.invitationService.acceptInvitation(token, user);
   }
 
@@ -146,12 +152,12 @@ export class InvitationController {
   @ApiResponse({
     status: 200,
     description: 'Invitation declined',
-    type: ReadInvitationDto,
+    type: ReadWorkspaceInvitationDto || ReadEventInvitationDto,
   })
   async declineInvitation(
     @Param('token') token: string,
     @GetAuthUser() user: UserWithAccount,
-  ): Promise<ReadInvitationDto> {
+  ): Promise<ReadWorkspaceInvitationDto | ReadEventInvitationDto> {
     return this.invitationService.declineInvitation(token, user);
   }
 }

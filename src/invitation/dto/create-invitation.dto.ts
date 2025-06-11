@@ -69,8 +69,8 @@ export class CreateEventInvitationDto extends BaseInvitationDto {
   @ApiProperty({
     description: 'The event ID where the user is being invited',
   })
-  @IsString()
-  eventSlug: string;
+  @IsInt()
+  eventId: number;
 
   type = 'event' as const;
 }

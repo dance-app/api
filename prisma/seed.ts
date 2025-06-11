@@ -115,19 +115,26 @@ async function main() {
     const dateStart = faker.date.soon({ days: 7 });
     const event = await prisma.event.create({
       data: {
-        name: `Studio A – Class ${i + 1}`,
+        name: `Studio A - Class ${i + 1}`,
         description: faker.lorem.sentence(),
         dateStart,
         dateEnd: new Date(dateStart.getTime() + 60 * 60 * 1000),
-        organizerId: workspaceA.id,
-        rule: [],
+        createdBy: {
+          connect: {
+            id: ownerA.id,
+          },
+        },
+        workspace: {
+          connect: {
+            id: workspaceA.id,
+          },
+        },
       },
     });
 
     // every student attends
     await prisma.attendee.createMany({
       data: membersA.map((m, idx) => ({
-        memberId: m.id,
         eventId: event.id,
         role: idx % 2 === 0 ? DanceRole.LEADER : DanceRole.FOLLOWER,
         type: AttendanceType.VALIDATE,

@@ -40,6 +40,13 @@ model User {
   createdWorkspaces Workspace[]
   createdMembers Member[] @relation("createdMembers")
 
+  // Event relationships
+  createdEvents Event[] @relation("CreatedEvents")
+  organizedEvents EventOrganizer[]
+  attendances Attendee[]
+
+  attendanceUpdates AttendanceHistory[]
+
   @@map("users")
 }
 
@@ -122,7 +129,7 @@ model WorkspaceConfig {
 
   weekStart WeekStart
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   workspaceId Int @unique
 
   @@map("workspaceConfig")
@@ -146,8 +153,6 @@ model Member {
   workspace Workspace @relation(fields: [workspaceId], references: [id])
   workspaceId Int
 
-  attendances Attendee[]
-
   roles WorkspaceRole[]
 
   level Int?
@@ -158,15 +163,31 @@ model Member {
   @@map("members")
 }
 
+// Many-to-many relationship between users & events
+model EventOrganizer {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId Int
+  
+  user User @relation(fields: [userId], references: [id])
+  userId Int
+  
+  // Role of the organizer (could be extended later)
+  // role EventOrganizerRole @default(ORGANIZER)
+  
+  @@unique([eventId, userId])
+  @@map("event_organizers")
+}
+
 model Event {
   id Int @id @default(autoincrement())
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  //createdById Int 
-  //createdBy User 
-  // managedById Int
-  // managedBy Member
+  createdById Int // User who created the event
+  createdBy User @relation("CreatedEvents", fields: [createdById], references: [id])
 
   name String
   description String?
@@ -177,15 +198,31 @@ model Event {
   capacityMax Int?
   leaderOffset Int? @default(0)
   followerOffset Int? @default(0)
-  // @see https://developers.google.com/calendar/api/v3/reference/events#recurrence
-  rule String[]
+  
+  // Recurring event support
+  rrule String? // iCalendar RRULE string for recurring events
+  parentEventId Int? // Reference to parent recurring event
+  parentEvent Event? @relation("RecurringEventChildren", fields: [parentEventId], references: [id])
+  childEvents Event[] @relation("RecurringEventChildren")
+  
+  // Event status
+  isCancelled Boolean @default(false)
+  cancelledAt DateTime? @db.Timestamptz(3)
+  
+  // Visibility and access control
+  visibility EventVisibility @default(WORKSPACE_ONLY)
 
+  // Organizers (many-to-many through EventOrganizer)
+  organizers EventOrganizer[]
+  
   attendees Attendee[]
-
+  
+  // Invitations
   invitations Invitation[]
 
-  organizer Workspace @relation(fields: [organizerId], references: [id])
-  organizerId Int
+  // Workspace relationship
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  workspaceId Int
 
   @@map("events")
 }
@@ -197,18 +234,44 @@ model Attendee {
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   role DanceRole?
-  type AttendanceType @default(WAITING)
 
-  member Member @relation(fields: [memberId], references: [id])
-  memberId Int
+  // THis should be deduced from the history
+  //status AttendanceStatus @default(CONFIRMED)
+
+  user User? @relation(fields: [userId], references: [id])
+  userId Int?
+
+  guestName String? // Display name for public attendees
+  guestEmail String? // Contact info for public attendees
+
 
   event Event @relation(fields: [eventId], references: [id])
   eventId Int
+  
+  historyEntries AttendanceHistory[]
 
   invitation Invitation? @relation("invitation") // invited through this invitatino
 
-  @@unique([memberId, eventId])
+  @@unique([eventId, userId, guestEmail])
   @@map("attendees")
+}
+
+model AttendanceHistory {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  
+  attendee Attendee @relation(fields: [attendeeId], references: [id], onDelete: Cascade)
+  attendeeId Int  @ unique
+
+  
+  // What action was performed
+  action AttendanceAction
+  
+  // Who performed the action (could be the member themselves or an organizer)
+  performedBy User @relation(fields: [performedById], references: [id])
+  performedById Int
+  
+  @@map("attendance_history")
 }
 
 model Notification {
@@ -333,4 +396,26 @@ enum NotificationType {
   INVITATION_RECEIVED
   WORKSPACE_MEMBER_JOINED
   // Add other types as needed
+}
+
+enum EventVisibility {
+  PUBLIC           // Anyone can see and attend
+  WORKSPACE_ONLY   // Only workspace members can see and attend
+  INVITATION_ONLY  // Only invited people can see and attend
+}
+
+/*
+// This can be deducted by the latest AttendanceAction in the history of the Attendee
+enum AttendanceStatus {
+  CONFIRMED
+  CANCELLED
+  PENDING
+  DECLINED
+}
+*/
+enum AttendanceAction {
+  REGISTERED     // User registered for event
+  CANCELLED      // User cancelled their attendance
+  DECLINED       // User declined invitation
+  REMOVED        // User was removed by organizer
 }

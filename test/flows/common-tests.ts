@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import {
   DanceRole,
+  EventVisibility,
   Invitation,
   PrismaClient,
   Workspace,
@@ -8,8 +9,45 @@ import {
 } from '@prisma/client';
 import request from 'supertest';
 
-import { MockMailService } from '../mock-mail.service';
-
+import { MockMailService } from '../mock-services/mock-mail.service';
+export async function createEvent(
+  app: INestApplication,
+  prisma: PrismaClient,
+  creatorJwt: string,
+  workspaceSlug: string,
+  name: string,
+  dateStart: Date,
+  visibility: EventVisibility,
+) {
+  await request(app.getHttpServer())
+    .post(`/workspace/${workspaceSlug}/events`)
+    .set('Authorization', `Bearer ${creatorJwt}`)
+    .send({
+      name,
+      dateStart,
+      visibility,
+    })
+    .expect(201)
+    .expect((res) => {
+      expect(res.body.name).toEqual(name);
+      expect(res.body.recurrence).toBeDefined();
+      expect(res.body.status).toBeDefined();
+      expect(res.body.status.isCancelled).toBeFalsy();
+      expect(res.body.status.visibility).toEqual(visibility);
+      expect(res.body.schedule).toBeDefined();
+      expect(res.body.schedule.dateStart).toEqual(dateStart.toISOString());
+      expect(res.body.organizers).toHaveLength(1);
+      expect(res.body.workspace).toBeDefined();
+    });
+  const eventModel = await prisma.event.findFirst({
+    where: {
+      name,
+    },
+  });
+  expect(eventModel).toBeDefined();
+  expect(eventModel.dateStart).toEqual(dateStart);
+  return eventModel;
+}
 export async function signInTest(
   app: INestApplication,
   email: string,
@@ -252,6 +290,60 @@ export async function createWorkspaceSeatTest(
     member: createdMember,
   };
 }
+
+export async function createAttendeeSeatTest(
+  app: INestApplication,
+  prisma: PrismaClient,
+  userJwt: string,
+  workspaceSlug: string,
+  eventId: number,
+  attendeeUserId?: number,
+  guestEmail?: string,
+) {
+  const addAttendeePayload = {
+    userId: attendeeUserId,
+    guestEmail: guestEmail,
+  };
+  const response = await request(app.getHttpServer())
+    .post(`/workspace/${workspaceSlug}/events/${eventId}/attendee`)
+    .set('Authorization', `Bearer ${userJwt}`)
+    .send(addAttendeePayload)
+    .expect(201);
+
+  // Assert - Check response
+  expect(response.body).toBeDefined();
+  expect(response.body).toHaveLength(1);
+  expect(response.body[0].guestEmail).toBe(
+    addAttendeePayload.guestEmail || null,
+  );
+  expect(response.body[0].user.id).toBe(addAttendeePayload.userId || null);
+  //expect(response.body.roles).toContain(role);
+  expect(response.body[0].id).toBeDefined();
+
+  // Assert - Check database
+  const createdAttendee = await prisma.attendee.findFirst({
+    where: {
+      eventId: eventId,
+      userId: attendeeUserId,
+      guestEmail: guestEmail,
+    },
+    include: {
+      user: true,
+      invitation: true,
+      historyEntries: {
+        include: {
+          performedBy: true,
+        },
+      },
+    },
+  });
+
+  expect(createdAttendee).toBeDefined();
+
+  return {
+    attendee: createdAttendee,
+  };
+}
 export async function sendWorkspaceInviteTest(
   app: INestApplication,
   prisma: PrismaClient,
@@ -324,6 +416,80 @@ export async function sendWorkspaceInviteTest(
   };
 }
 
+export async function sendEventInviteTest(
+  app: INestApplication,
+  prisma: PrismaClient,
+  mockMailService: MockMailService,
+  userJwt: string,
+  eventId: number,
+  attendeeSeatId: number,
+  inviteeEmail: string | undefined = undefined,
+  inviteeId: number | undefined = undefined,
+) {
+  // Invitation data
+  const invitationData = {
+    email: inviteeEmail,
+    type: 'EVENT',
+    attendeeSeatId,
+    eventId,
+    inviteeId,
+  };
+
+  const attendeeSeat = await prisma.attendee.findUnique({
+    where: { id: attendeeSeatId },
+    include: { user: { include: { accounts: true } } },
+  });
+  const expectedEmail = attendeeSeat.user.accounts[0].email;
+  // Make request to create invitation
+  const response = await request(app.getHttpServer())
+    .post('/invitations/event/' + eventId)
+    .set('Authorization', `Bearer ${userJwt}`)
+    .send(invitationData)
+    .expect(201);
+  // Verify response structure
+  expect(response.body).toHaveProperty('id');
+  expect(response.body).toHaveProperty('email', expectedEmail || inviteeEmail);
+  expect(response.body).toHaveProperty('status', 'PENDING');
+  expect(response.body).toHaveProperty('type', 'EVENT');
+  expect(response.body).toHaveProperty('eventId', eventId);
+
+  const invitationId = response.body.id;
+
+  // Verify database record
+  const dbInvitation = await prisma.invitation.findUnique({
+    where: { id: invitationId },
+    include: {
+      attendeeSeat: true,
+    },
+  });
+
+  expect(dbInvitation).toBeTruthy();
+  expect(dbInvitation.email).toBe(expectedEmail || inviteeEmail);
+  expect(dbInvitation.status).toBe('PENDING');
+  expect(dbInvitation.attendeeSeatId).toBe(attendeeSeatId);
+  expect(dbInvitation.token).toBeTruthy(); // Token should be generated
+
+  // Verify that the member seat is now reserved
+
+  expect(attendeeSeat.userId).toBeDefined();
+
+  // Verify email was sent
+  console.log(mockMailService);
+  expect(mockMailService.sentMails).toHaveLength(1);
+  const sentMail =
+    mockMailService.sentMails[mockMailService.sentMails.length - 1];
+
+  expect(sentMail.to).toBe(expectedEmail || inviteeEmail);
+  expect(sentMail.subject).toBe('Event Invitation');
+  expect(sentMail.context).toHaveProperty('inviteToken', dbInvitation.token);
+  //expect(sentMail.context).toHaveProperty('workspaceName', workspaceName);
+  //expect(sentMail.context).toHaveProperty('assignedRole', 'TEACHER');
+
+  return {
+    invite: dbInvitation,
+  };
+}
+
 export async function listWorkspaceInvitesTest(
   app: INestApplication,
   userJwt: string,
@@ -339,9 +505,8 @@ export async function listWorkspaceInvitesTest(
     .expect(200);
 
   expect(response.body).toHaveLength(expectedInvites.length);
-  console.log(expectedInvites);
+
   for (const [i, invite] of expectedInvites.entries()) {
-    console.log(response.body);
     expect(response.body[i]).toEqual(
       expect.objectContaining({
         workspaceId: workspace.id,

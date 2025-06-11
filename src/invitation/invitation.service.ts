@@ -13,18 +13,24 @@ import {
   Invitation,
   WorkspaceRole,
   Prisma,
+  AttendanceAction,
 } from '@prisma/client';
 import { v4 as uuid } from 'uuid';
 
 import {
+  CreateEventInvitationDto,
   //CreateEventInvitationDto,
   CreateWorkspaceInvitationDto,
 } from './dto/create-invitation.dto';
-import { ReadInvitationDto } from './dto/read-invitation.dto';
+import {
+  ReadWorkspaceInvitationDto,
+  ReadEventInvitationDto,
+} from './dto/read-invitation.dto';
 import { InviteWithInviter } from './invitation.types';
 import { UserCreatedEvent } from '../auth/event/user-created.event';
 
 import { DatabaseService } from '@/database/database.service';
+import { EventService } from '@/event/event.service';
 import { MailService } from '@/mail/mail.service';
 import { MemberService } from '@/member/member.service';
 import { PaginationService } from '@/pagination/pagination.service';
@@ -42,6 +48,8 @@ export class InvitationService {
     @Inject(forwardRef(() => WorkspaceService))
     private workspaceService: WorkspaceService,
     private memberService: MemberService,
+    @Inject(forwardRef(() => EventService))
+    private eventService: EventService,
     private pagination: PaginationService,
   ) {}
 
@@ -106,10 +114,38 @@ export class InvitationService {
     });
     return existingInvitation;
   }
+
+  async findPendingEventInvites(
+    eventId: number,
+    inviteeId: number | undefined,
+    email: string | undefined,
+  ) {
+    const existingInvitation = await this.database.invitation.findFirst({
+      where: {
+        type: 'EVENT',
+        OR: [
+          {
+            email,
+            eventId,
+            status: InvitationStatus.PENDING,
+          },
+          inviteeId
+            ? {
+                inviteeId,
+                eventId,
+                status: InvitationStatus.PENDING,
+              }
+            : {},
+        ],
+      },
+    });
+    return existingInvitation;
+  }
+
   async createWorkspaceInvite(
     currentUser: UserWithAccount,
     dto: CreateWorkspaceInvitationDto,
-  ): Promise<ReadInvitationDto> {
+  ): Promise<ReadWorkspaceInvitationDto> {
     const { email, inviteeId, workspaceSlug, memberSeatId } = dto;
 
     // Validate that at least email or inviteeId is provided
@@ -127,6 +163,8 @@ export class InvitationService {
     let inviteeEmail: string | null = null;
     let invitee: UserWithAccount | null = null;
     if (inviteeId != undefined) {
+      // TODO: this doesn't seem necessary
+      // We should probably first retrieve the inviteeMember and then simply check that the user (inviteeId) is not already bond to the member
       const existingMember = await this.memberService.getMemberByUserId(
         inviteeId,
         workspace.id,
@@ -244,18 +282,161 @@ export class InvitationService {
       }
     }
 
-    return this.mapToInvitationDto(invitation);
+    return this.mapToInvitationDto(invitation) as ReadWorkspaceInvitationDto;
   }
 
-  // TODO
-  /*async createEventInvite(
+  async createEventInvite(
     currentUser: UserWithAccount,
     dto: CreateEventInvitationDto,
-  ): Promise<ReadInvitationDto> {}*/
+  ): Promise<ReadEventInvitationDto> {
+    const { email, inviteeId, eventId, attendeeSeatId } = dto;
+
+    // Validate that at least email or inviteeId is provided
+    if (!email && !inviteeId) {
+      throw new BadRequestException(
+        'Either email or inviteeId must be provided',
+      );
+    }
+
+    // Find the event by id
+    const event = await this.eventService.getEventById(eventId);
+
+    // Check if user already attends the event
+    let inviteeEmail: string | null = null;
+    let invitee: UserWithAccount | null = null;
+
+    const inviteeAttendee = await this.database.attendee.findUnique({
+      where: {
+        id: attendeeSeatId,
+      },
+      include: {
+        user: {
+          include: {
+            accounts: true,
+          },
+        },
+        historyEntries: true,
+      },
+    });
+    if (!inviteeAttendee)
+      throw new BadRequestException(
+        'attendeeSeatId does not match an existing member',
+      );
+
+    if (
+      inviteeAttendee.historyEntries.some(
+        (h) => h.action !== AttendanceAction.REGISTERED,
+      )
+    ) {
+      throw new BadRequestException(
+        "Attendee's attendance has already been set",
+      );
+    }
+    invitee = inviteeAttendee.user;
+    inviteeEmail = invitee?.accounts?.find((a) => !!a.email).email;
+    // Check if there's already a pending invitation for this email/user
+    const existingInvitation = await this.findPendingEventInvites(
+      event.id,
+      inviteeId,
+      email,
+    );
+
+    if (existingInvitation) {
+      throw new BadRequestException(
+        'There is already a pending invitation for this user',
+      );
+    }
+
+    // Create a new invitation
+    const expiresAt = new Date();
+    expiresAt.setDate(
+      Math.min(
+        new Date().getDate() + this.INVITATION_EXPIRY_DAYS,
+        event.dateStart.getDate(),
+      ),
+    );
+    const token = uuid();
+
+    // Create the invitation
+    const invitationCreationQuery: Prisma.InvitationCreateArgs = {
+      data: {
+        email: email || inviteeEmail,
+        firstName: '',
+        lastName: '', // TODO
+        token,
+        expiresAt,
+        event: {
+          connect: {
+            id: event.id,
+          },
+        },
+        inviter: {
+          connect: {
+            id: currentUser.id,
+          },
+        },
+        type: 'EVENT',
+      },
+      include: {
+        event: true,
+        inviter: true,
+      },
+    };
+    if (inviteeId !== undefined) {
+      invitationCreationQuery.data.invitee = {
+        connect: {
+          id: inviteeId,
+        },
+      };
+    }
+    if (attendeeSeatId !== undefined) {
+      invitationCreationQuery.data.attendeeSeat = {
+        connect: {
+          id: attendeeSeatId,
+        },
+      };
+    }
+    const invitation = await this.database.invitation.create(
+      invitationCreationQuery,
+    );
+
+    // If email is provided, send invitation email
+    const sendInviteByEmail = email || inviteeEmail;
+    if (sendInviteByEmail) {
+      try {
+        const inviterName =
+          `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() ||
+          'A workspace admin';
+
+        await this.mailService.sendEventInviteEmail(
+          sendInviteByEmail,
+          event.name,
+          token,
+          '',
+          inviterName,
+          event.dateStart,
+          event.location,
+          event.description,
+          undefined,
+        );
+      } catch (error) {
+        console.log('coucou');
+        this.logger.error(
+          `Failed to send invitation email to ${sendInviteByEmail}`,
+          error,
+        );
+        // Don't fail the request if email sending fails
+        // TODO: maybe return a status (emailSent: true | false)?
+      }
+    }
+    console.log(this.mailService);
+
+    return this.mapToInvitationDto(invitation) as ReadEventInvitationDto;
+  }
 
   async findWorkspaceInvitations(
     workspace: Workspace,
-  ): Promise<ReadInvitationDto[]> {
+  ): Promise<ReadWorkspaceInvitationDto[]> {
     const invitations = await this.database.invitation.findMany({
       where: { workspaceId: workspace.id, type: 'WORKSPACE' },
       include: {
@@ -264,7 +445,9 @@ export class InvitationService {
       },
     });
 
-    return invitations.map((invitation) => this.mapToInvitationDto(invitation));
+    return invitations.map((invitation) =>
+      this.mapToInvitationDto(invitation),
+    ) as ReadWorkspaceInvitationDto[];
   }
 
   async findUserInvitations(
@@ -278,6 +461,7 @@ export class InvitationService {
       },
       include: {
         workspace: true,
+        event: true,
         inviter: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -287,7 +471,7 @@ export class InvitationService {
   }
   async findUserInvitationsDto(
     currentUser: UserWithAccount,
-  ): Promise<ReadInvitationDto[]> {
+  ): Promise<(ReadWorkspaceInvitationDto | ReadEventInvitationDto)[]> {
     const invitations = await this.findUserInvitations(currentUser);
 
     return invitations.map((invitation) => this.mapToInvitationDto(invitation));
@@ -352,7 +536,7 @@ export class InvitationService {
   async acceptInvitation(
     token: string,
     currentUser: UserWithAccount,
-  ): Promise<ReadInvitationDto> {
+  ): Promise<ReadWorkspaceInvitationDto | ReadEventInvitationDto> {
     const invitation = await this.getInvitationByToken(token);
 
     // Check if invitation is still valid
@@ -394,7 +578,7 @@ export class InvitationService {
   async declineInvitation(
     token: string,
     currentUser: UserWithAccount,
-  ): Promise<ReadInvitationDto> {
+  ): Promise<ReadWorkspaceInvitationDto | ReadEventInvitationDto> {
     const invitation = await this.getInvitationByToken(token);
 
     // Check if invitation is still valid
@@ -438,28 +622,52 @@ export class InvitationService {
 
   private mapToInvitationDto(
     invitation: Invitation | InviteWithInviter,
-  ): ReadInvitationDto {
-    return {
-      id: invitation.id,
-      type: invitation.type,
-      createdAt: invitation.createdAt,
-      updatedAt: invitation.updatedAt,
-      email: invitation.email,
-      firstName: invitation.firstName,
-      lastName: invitation.lastName,
-      token: invitation.token,
-      expiresAt: invitation.expiresAt,
-      status: invitation.status,
-      workspaceId: invitation.workspaceId,
-      workspaceName: 'workspace' in invitation && invitation.workspace?.name,
-      workspaceSlug: 'workspace' in invitation && invitation.workspace?.slug,
-      inviterId: invitation.inviterId,
-      inviterName:
-        'inviter' in invitation && invitation.inviter
-          ? `${invitation.inviter.firstName || ''} ${invitation.inviter.lastName || ''}`.trim()
-          : '',
-      inviteeId: invitation.inviteeId,
-      memberSeatId: invitation.memberSeatId,
-    };
+  ): ReadWorkspaceInvitationDto | ReadEventInvitationDto {
+    if (invitation.type === 'EVENT') {
+      return {
+        id: invitation.id,
+        type: invitation.type,
+        createdAt: invitation.createdAt,
+        updatedAt: invitation.updatedAt,
+        email: invitation.email,
+        firstName: invitation.firstName,
+        lastName: invitation.lastName,
+        token: invitation.token,
+        expiresAt: invitation.expiresAt,
+        status: invitation.status,
+        eventId: invitation.eventId,
+        eventName: 'event' in invitation && invitation.event?.name,
+        inviterId: invitation.inviterId,
+        inviterName:
+          'inviter' in invitation && invitation.inviter
+            ? `${invitation.inviter.firstName || ''} ${invitation.inviter.lastName || ''}`.trim()
+            : '',
+        inviteeId: invitation.inviteeId,
+        attendeeSeatId: invitation.attendeeSeatId,
+      };
+    } else {
+      return {
+        id: invitation.id,
+        type: invitation.type,
+        createdAt: invitation.createdAt,
+        updatedAt: invitation.updatedAt,
+        email: invitation.email,
+        firstName: invitation.firstName,
+        lastName: invitation.lastName,
+        token: invitation.token,
+        expiresAt: invitation.expiresAt,
+        status: invitation.status,
+        workspaceId: invitation.workspaceId,
+        workspaceName: 'workspace' in invitation && invitation.workspace?.name,
+        workspaceSlug: 'workspace' in invitation && invitation.workspace?.slug,
+        inviterId: invitation.inviterId,
+        inviterName:
+          'inviter' in invitation && invitation.inviter
+            ? `${invitation.inviter.firstName || ''} ${invitation.inviter.lastName || ''}`.trim()
+            : '',
+        inviteeId: invitation.inviteeId,
+        memberSeatId: invitation.memberSeatId,
+      };
+    }
   }
 }

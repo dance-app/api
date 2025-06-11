@@ -7,7 +7,7 @@
 // 7. User tries to login with old password & fails
 // 8. User logs in with new password & succeeds
 
-import { INestApplication } from '@nestjs/common';
+import { ConsoleLogger, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import {
@@ -18,10 +18,10 @@ import {
   signUpTest,
   verifyEmailTest,
 } from './common-tests';
-import { setupTestSteps } from './run-flow';
+import { setupSequentialFlow } from './run-flow';
 import { AppModule } from '../../src/app.module';
-import { MockMailService } from '../mock-mail.service';
-import { PrismaTestingService } from '../prisma-testing.service';
+import { PrismaTestingService } from '../helpers/prisma-testing.service';
+import { MockMailService } from '../mock-services/mock-mail.service';
 
 import { MailService } from '@/mail/mail.service';
 import { UserWithAccount } from '@/user/user.types';
@@ -53,11 +53,13 @@ describe('User Forgot Password Flow', () => {
   };
 
   beforeAll(async () => {
+    console.log('beforeAll');
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(MailService)
       .useClass(MockMailService)
+      .setLogger(new ConsoleLogger())
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -67,12 +69,12 @@ describe('User Forgot Password Flow', () => {
 
     await prismaTesting.reset();
 
-    testState.superAdmin = await prismaTesting.createSuperAdmin(
-      'admin@example.com',
-      'password123',
-      'Super',
-      'Admin',
-    );
+    testState.superAdmin = await prismaTesting.createSuperAdmin({
+      email: 'admin@example.com',
+      password: 'password123',
+      firstName: 'Super',
+      lastName: 'Admin',
+    });
   });
 
   afterAll(async () => {
@@ -83,6 +85,7 @@ describe('User Forgot Password Flow', () => {
     {
       name: 'User signs up',
       test: async () => {
+        console.log(JSON.stringify(mailService));
         const tokens = await signUpTest(
           app,
           prismaTesting.client,
@@ -92,12 +95,14 @@ describe('User Forgot Password Flow', () => {
           mockData.user.lastName,
           mockData.user.password,
         );
+        console.log(JSON.stringify(mailService));
         testState.confirmEmailToken = tokens.confirmToken;
       },
     },
     {
       name: 'User verifies its email',
       test: async () => {
+        console.log(JSON.stringify(mailService));
         await verifyEmailTest(app, testState.confirmEmailToken);
       },
     },
@@ -161,5 +166,5 @@ describe('User Forgot Password Flow', () => {
     },
   ];
 
-  setupTestSteps(testSteps);
+  setupSequentialFlow(testSteps);
 });

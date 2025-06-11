@@ -3,44 +3,58 @@ import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { JwtModule } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
-import { InvitationStatus, WorkspaceRole, Member } from '@prisma/client';
+import {
+  InvitationStatus,
+  WorkspaceRole,
+  Member,
+  Invitation,
+} from '@prisma/client';
 import request from 'supertest';
 import { v4 as uuidv4 } from 'uuid';
 
 import { CreateWorkspaceInvitationDto } from './dto/create-invitation.dto';
 import { InvitationModule } from './invitation.module';
-import { MockMailService } from '../../test/mock-mail.service';
+import { MockMailService } from '../../test/mock-services/mock-mail.service';
 import { MailService } from '../mail/mail.service';
 
 import { AuthModule } from '@/auth/auth.module';
 import { DatabaseModule } from '@/database/database.module';
 import { PaginationModule } from '@/pagination/pagination.module';
-import { signInTest } from '@/test/flows/common-tests';
-import { PrismaTestingService } from '@/test/prisma-testing.service';
+import { signInTest, signUpTest } from '@/test/flows/common-tests';
+import { TestAssertions } from '@/test/helpers/assertions';
+import { TestDataFactory } from '@/test/helpers/mock-data';
+import { PrismaTestingService } from '@/test/helpers/prisma-testing.service';
 import { UserWithAccount } from '@/user/user.types';
 import { WorkspaceWithMember } from '@/workspace/worspace.types';
 
 describe('InvitationController (Integration)', () => {
-  const testUserDto = {
-    email: 'john@example.com',
-    password: 'password1',
-    firstName: 'John',
-    lastName: 'Doe',
-  };
-  const otherUserDto = {
-    email: 'jane@example.com',
-    password: 'password2',
-    firstName: 'Jane',
-    lastName: 'Smith',
-  };
+  let app: INestApplication;
+  let testService: PrismaTestingService;
+  let mailService: MockMailService;
+
+  // Test data
   let testUser: UserWithAccount;
   let testWorkspace: WorkspaceWithMember;
   let otherUser: UserWithAccount;
   let emptySeat: Member;
+  let testUserJwt: string;
 
-  let app: INestApplication;
-  const prismaTesting = new PrismaTestingService();
-  let mailService: MockMailService;
+  const testData = {
+    owner: TestDataFactory.createMockUserDto({
+      email: 'owner@example.com',
+      firstName: 'Test',
+      lastName: 'Owner',
+    }),
+    otherUser: TestDataFactory.createMockUserDto({
+      email: 'other@example.com',
+      firstName: 'Other',
+      lastName: 'User',
+    }),
+    workspace: TestDataFactory.createWorkspaceData({
+      name: 'Test Workspace',
+      slug: 'test-workspace',
+    }),
+  };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -65,43 +79,46 @@ describe('InvitationController (Integration)', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     await app.init();
 
+    testService = new PrismaTestingService();
     mailService = moduleRef.get<MockMailService>(MailService);
   });
 
   beforeEach(async () => {
     // Clean database
-    await prismaTesting.reset();
+    await testService.reset();
     mailService.reset();
 
-    testUser = await prismaTesting.createUser(
-      testUserDto.email,
-      testUserDto.password,
-      testUserDto.firstName,
-      testUserDto.lastName,
-    );
-    otherUser = await prismaTesting.createUser(
-      otherUserDto.email,
-      otherUserDto.password,
-      otherUserDto.firstName,
-      otherUserDto.lastName,
-    );
+    // Create test users
+    testUser = await testService.createUser(testData.owner);
+    otherUser = await testService.createUser(testData.otherUser);
 
-    testWorkspace = await prismaTesting.createWorkspace(
-      'Test Workspace',
-      'test-workspace',
-      testUser.id,
-      [testUser],
-      [WorkspaceRole.OWNER],
-    );
+    // Create workspace with owner
+    const { workspace } = await testService.createWorkspace(testUser.id, {
+      name: testData.workspace.name,
+      slug: testData.workspace.slug,
+      members: [{ user: testUser, roles: [WorkspaceRole.OWNER] }],
+    });
+    testWorkspace = workspace;
 
-    emptySeat = await prismaTesting.createMemberSeat(
+    // Create empty member seat
+    emptySeat = await testService.createMemberSeat(
       testUser.id,
       testWorkspace.id,
-      [WorkspaceRole.STUDENT],
-      'Jane Doe',
+      {
+        name: 'Jane Doe',
+        roles: [WorkspaceRole.STUDENT],
+      },
     );
 
-    // Mock request.user for each test
+    // Get JWT token for test user
+    const tokens = await signInTest(
+      app,
+      testData.owner.email,
+      testData.owner.password,
+    );
+    testUserJwt = tokens.accessToken;
+
+    // Mock request.user for routes that need it
     app.use((req, res, next) => {
       req.user = testUser;
       next();
@@ -109,61 +126,58 @@ describe('InvitationController (Integration)', () => {
   });
 
   afterAll(async () => {
-    await prismaTesting.close();
+    await testService.close();
     await app.close();
   });
 
-  describe('POST /invitations', () => {
-    let testUserJwt;
-    beforeEach(async () => {
-      testUserJwt = (
-        await signInTest(app, testUserDto.email, testUserDto.password)
-      ).accessToken;
-    });
+  describe('POST /invitations/workspace/:slug', () => {
     it('should create a new workspace invitation for non-existing user', async () => {
+      const inviteeEmail = TestDataFactory.createUniqueEmail('newuser');
       const createDto: CreateWorkspaceInvitationDto = {
-        email: 'newuser@example.com',
+        email: inviteeEmail,
         type: 'workspace',
         workspaceSlug: testWorkspace.slug,
         memberSeatId: emptySeat.id,
       };
-      /*const { accessToken } = await signInTest(
-        app,
-        testUser.accounts[0].email,
-        testUser.accounts[1].password,
-      );*/
+
       const response = await request(app.getHttpServer())
         .post(`/invitations/workspace/${testWorkspace.slug}`)
         .set('Authorization', `Bearer ${testUserJwt}`)
         .send(createDto)
         .expect(201);
 
+      // Verify response structure
+      TestAssertions.expectInvitationShape(response.body, 'WORKSPACE');
       expect(response.body).toEqual(
         expect.objectContaining({
           email: createDto.email,
           status: InvitationStatus.PENDING,
           workspaceId: testWorkspace.id,
           inviterId: testUser.id,
+          memberSeatId: emptySeat.id,
         }),
       );
 
       // Verify invitation was created in database
-      const invitation = await prismaTesting.client.invitation.findUnique({
+      const invitation = await testService.client.invitation.findUnique({
         where: { id: response.body.id },
       });
       expect(invitation).toBeTruthy();
       expect(invitation!.email).toBe(createDto.email);
 
-      // Verify member seat was created
-      const memberSeat = await prismaTesting.client.member.findUnique({
+      // Verify member seat exists and is not linked yet
+      const memberSeat = await testService.client.member.findUnique({
         where: { id: response.body.memberSeatId },
       });
       expect(memberSeat).toBeTruthy();
       expect(memberSeat!.userId).toBeNull(); // Not linked yet
 
       // Verify email was sent
-      expect(mailService.sentMails).toHaveLength(1);
-      expect(mailService.sentMails[0].to).toBe(createDto.email);
+      TestAssertions.expectEmailSent(
+        mailService,
+        createDto.email,
+        'Workspace Invitation',
+      );
     });
 
     it('should create a new invitation for existing user by ID', async () => {
@@ -196,7 +210,7 @@ describe('InvitationController (Integration)', () => {
       const createDto: CreateWorkspaceInvitationDto = {
         inviteeId: testUser.id, // testUser is already a member
         workspaceSlug: testWorkspace.slug,
-        memberSeatId: testWorkspace.members[0].id,
+        memberSeatId: emptySeat.id,
         type: 'workspace',
       };
 
@@ -208,10 +222,11 @@ describe('InvitationController (Integration)', () => {
     });
 
     it('should return 400 when pending invitation already exists', async () => {
+      const duplicateEmail = TestDataFactory.createUniqueEmail('duplicate');
       const createDto: CreateWorkspaceInvitationDto = {
-        email: 'duplicate@example.com',
+        email: duplicateEmail,
         workspaceSlug: testWorkspace.slug,
-        memberSeatId: testWorkspace.members[0].id,
+        memberSeatId: emptySeat.id,
         type: 'workspace',
       };
 
@@ -230,24 +245,26 @@ describe('InvitationController (Integration)', () => {
         .expect(400);
     });
 
-    it('should return 404 when workspace not found', async () => {
+    it('should return 403 when workspace not found', async () => {
       const createDto: CreateWorkspaceInvitationDto = {
-        email: 'test@example.com',
+        email: TestDataFactory.createUniqueEmail('test'),
         workspaceSlug: 'non-existent',
         memberSeatId: emptySeat.id,
         type: 'workspace',
       };
 
       await request(app.getHttpServer())
-        .post(`/invitations/workspace/${testWorkspace.slug}`)
+        .post(`/invitations/workspace/non-existent`)
         .set('Authorization', `Bearer ${testUserJwt}`)
         .send(createDto)
-        .expect(404);
+        .expect(403);
     });
 
     it('should return 400 when neither email nor inviteeId provided', async () => {
       const createDto: Partial<CreateWorkspaceInvitationDto> = {
         workspaceSlug: testWorkspace.slug,
+        memberSeatId: emptySeat.id,
+        type: 'workspace',
       };
 
       await request(app.getHttpServer())
@@ -259,395 +276,347 @@ describe('InvitationController (Integration)', () => {
   });
 
   describe('GET /invitations/workspace/:slug', () => {
+    let testInvitations: Invitation[];
+
     beforeEach(async () => {
-      // Create some test invitations
-      await prismaTesting.client.invitation.createMany({
-        data: [
+      // Create test invitations using helper method
+      testInvitations = await testService.createWorkspaceInvitations(
+        testWorkspace.id,
+        testUser.id,
+        [
           {
-            type: 'WORKSPACE',
-            email: 'user1@example.com',
+            email: TestDataFactory.createUniqueEmail('user1'),
             firstName: 'User',
             lastName: 'One',
-            token: uuidv4(),
-            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            workspaceId: testWorkspace.id,
-            inviterId: testUser.id,
-            memberSeatId: (
-              await prismaTesting.client.member.create({
-                data: {
-                  workspace: {
-                    connect: {
-                      id: testWorkspace.id,
-                    },
-                  },
-                  createdBy: {
-                    connect: {
-                      id: testUser.id,
-                    },
-                  },
-                  name: 'User One',
-                  roles: { set: [WorkspaceRole.STUDENT] },
-                },
-              })
-            ).id,
+            memberName: 'User One',
+            roles: [WorkspaceRole.STUDENT],
           },
           {
-            type: 'WORKSPACE',
-            email: 'user2@example.com',
+            email: TestDataFactory.createUniqueEmail('user2'),
             firstName: 'User',
             lastName: 'Two',
-            token: uuidv4(),
-            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            workspaceId: testWorkspace.id,
-            inviterId: testUser.id,
-            memberSeatId: (
-              await prismaTesting.client.member.create({
-                data: {
-                  workspace: {
-                    connect: {
-                      id: testWorkspace.id,
-                    },
-                  },
-                  createdBy: {
-                    connect: {
-                      id: testUser.id,
-                    },
-                  },
-                  name: 'User Two',
-                  roles: { set: [WorkspaceRole.STUDENT] },
-                },
-              })
-            ).id,
+            memberName: 'User Two',
+            roles: [WorkspaceRole.STUDENT],
           },
         ],
-      });
+      );
     });
 
     it('should return all invitations for a workspace', async () => {
       const response = await request(app.getHttpServer())
-        .get('/invitations/workspace/test-workspace')
-        //.set('Authorization', `Bearer ${testUserJwt}`)
+        .get(`/invitations/workspace/${testWorkspace.slug}`)
+        .set('Authorization', `Bearer ${testUserJwt}`)
         .expect(200);
 
       expect(response.body).toHaveLength(2);
+
+      // Verify first invitation
       expect(response.body[0]).toEqual(
         expect.objectContaining({
-          email: 'user1@example.com',
+          email: testInvitations[0].email,
           workspaceId: testWorkspace.id,
+          status: InvitationStatus.PENDING,
         }),
       );
+
+      // Verify second invitation
       expect(response.body[1]).toEqual(
         expect.objectContaining({
-          email: 'user2@example.com',
+          email: testInvitations[1].email,
           workspaceId: testWorkspace.id,
+          status: InvitationStatus.PENDING,
         }),
       );
     });
 
-    it('should return 404 when workspace not found', async () => {
+    it('should return 403 when workspace not found', async () => {
       await request(app.getHttpServer())
         .get('/invitations/workspace/non-existent')
-        .expect(404);
+        .set('Authorization', `Bearer ${testUserJwt}`)
+        .expect(403);
     });
   });
 
   describe('GET /invitations/token/:token', () => {
-    let testInvitation: any;
-    const invitationToken = uuidv4();
-    beforeEach(async () => {
-      const memberSeat = await prismaTesting.client.member.create({
-        data: {
-          workspace: {
-            connect: {
-              id: testWorkspace.id,
-            },
-          },
-          name: 'Test User',
-          roles: { set: [WorkspaceRole.STUDENT] },
-          createdBy: {
-            connect: {
-              id: testUser.id,
-            },
-          },
-        },
-      });
+    let testInvitation: Invitation;
 
-      testInvitation = await prismaTesting.client.invitation.create({
-        data: {
-          type: 'WORKSPACE',
-          email: 'test@example.com',
-          token: 'invitationToken',
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          workspaceId: testWorkspace.id,
-          inviterId: testUser.id,
-          memberSeatId: memberSeat.id,
-        },
-      });
+    beforeEach(async () => {
+      const invitations = await testService.createWorkspaceInvitations(
+        testWorkspace.id,
+        testUser.id,
+        [
+          {
+            email: TestDataFactory.createUniqueEmail('test'),
+            firstName: 'Test',
+            lastName: 'User',
+            memberName: 'Test User',
+            roles: [WorkspaceRole.STUDENT],
+          },
+        ],
+      );
+      testInvitation = invitations[0];
     });
 
     it('should return invitation details by token', async () => {
       const response = await request(app.getHttpServer())
-        .get('/invitations/token/' + invitationToken)
+        .get(`/invitations/token/${testInvitation.token}`)
+        .set('Authorization', `Bearer ${testUserJwt}`)
         .expect(200);
 
       expect(response.body).toEqual(
         expect.objectContaining({
           id: testInvitation.id,
-          token: invitationToken,
-          email: 'test@example.com',
+          token: testInvitation.token,
+          email: testInvitation.email,
+          workspaceId: testWorkspace.id,
         }),
       );
     });
 
     it('should return 404 when token not found', async () => {
+      const randomToken = uuidv4();
       await request(app.getHttpServer())
-        .get('/invitations/token/' + uuidv4())
+        .get(`/invitations/token/${randomToken}`)
+        .set('Authorization', `Bearer ${testUserJwt}`)
         .expect(404);
     });
   });
 
   describe('POST /invitations/accept/:token', () => {
-    let testInvitation: any;
+    let testInvitation: Invitation;
     let memberSeat: Member;
-    const invitationToken = uuidv4();
+    let inviteeUser: UserWithAccount;
+    let inviteeJwt: string;
     beforeEach(async () => {
-      memberSeat = await prismaTesting.client.member.create({
-        data: {
-          workspace: {
-            connect: {
-              id: testWorkspace.id,
-            },
-          },
-          name: 'Test User',
-          roles: { set: [WorkspaceRole.STUDENT] },
-          createdBy: {
-            connect: {
-              id: testUser.id,
-            },
-          },
-        },
-      });
+      // Create user who will accept the invitation
+      const inviteeData = await testService.createMockUser();
+      inviteeUser = inviteeData.user;
 
-      testInvitation = await prismaTesting.client.invitation.create({
-        data: {
-          type: 'WORKSPACE',
-          email: testUser.accounts[0].email, // Same as testUser's email
-          token: invitationToken,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          workspaceId: testWorkspace.id,
-          inviterId: testUser.id,
-          memberSeatId: memberSeat.id,
-        },
+      const inviteeCreds = await signInTest(
+        app,
+        inviteeData.email,
+        inviteeData.password,
+      );
+      inviteeJwt = inviteeCreds.accessToken;
+      // Create invitation for this user
+      const invitations = await testService.createWorkspaceInvitations(
+        testWorkspace.id,
+        testUser.id,
+        [
+          {
+            email: inviteeUser.accounts[0].email,
+            firstName: inviteeUser.firstName,
+            lastName: inviteeUser.lastName,
+            memberName: `${inviteeUser.firstName} ${inviteeUser.lastName}`,
+            roles: [WorkspaceRole.STUDENT],
+          },
+        ],
+      );
+      testInvitation = invitations[0];
+
+      // Get the member seat
+      memberSeat = (await testService.client.member.findUnique({
+        where: { id: testInvitation.memberSeatId! },
+      })) as Member;
+
+      // Update mock user for acceptance
+      app.use((req, res, next) => {
+        req.user = inviteeUser;
+        next();
       });
     });
 
     it('should accept an invitation successfully', async () => {
       const response = await request(app.getHttpServer())
-        .post(`/invitations/accept/${invitationToken}`)
+        .post(`/invitations/accept/${testInvitation.token}`)
+        .set('Authorization', `Bearer ${inviteeJwt}`)
         .expect(200);
 
       expect(response.body).toEqual(
         expect.objectContaining({
           id: testInvitation.id,
           status: InvitationStatus.ACCEPTED,
-          inviteeId: testUser.id,
+          inviteeId: inviteeUser.id,
         }),
       );
 
       // Verify member was linked to user
-      const updatedMember = await prismaTesting.client.member.findUnique({
+      const updatedMember = await testService.client.member.findUnique({
         where: { id: memberSeat.id },
       });
-      expect(updatedMember!.userId).toBe(testUser.id);
+      expect(updatedMember!.userId).toBe(inviteeUser.id);
 
       // Verify invitation status in database
-      const updatedInvitation =
-        await prismaTesting.client.invitation.findUnique({
-          where: { id: testInvitation.id },
-        });
+      const updatedInvitation = await testService.client.invitation.findUnique({
+        where: { id: testInvitation.id },
+      });
       expect(updatedInvitation!.status).toBe(InvitationStatus.ACCEPTED);
     });
 
     it('should return 404 when token not found', async () => {
+      const randomToken = uuidv4();
       await request(app.getHttpServer())
-        .post('/invitations/accept/' + uuidv4())
+        .post(`/invitations/accept/${randomToken}`)
+        .set('Authorization', `Bearer ${inviteeJwt}`)
         .expect(404);
     });
 
     it('should return 400 when invitation is expired', async () => {
       // Create expired invitation
-      const expiredToken = uuidv4();
-      await prismaTesting.client.invitation.create({
-        data: {
-          type: 'WORKSPACE',
-          email: 'john@example.com',
-          token: expiredToken,
-          expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // Yesterday
-          workspace: {
-            connect: {
-              id: testWorkspace.id,
-            },
-          },
-          inviter: {
-            connect: {
-              id: testUser.id,
-            },
-          },
-          memberSeat: {
-            connect: {
-              id: memberSeat.id,
-            },
-          },
-        },
-      });
+      const expiredInvitation = await testService.createExpiredInvitation(
+        testWorkspace.id,
+        testUser.id,
+        inviteeUser.accounts[0].email,
+      );
 
       await request(app.getHttpServer())
-        .post('/invitations/accept/' + expiredToken)
-        .expect(400); // TODO: check response message (could fail with 400 for manny reason)
+        .post(`/invitations/accept/${expiredInvitation.token}`)
+        .set('Authorization', `Bearer ${inviteeJwt}`)
+        .expect(400);
     });
   });
 
   describe('POST /invitations/decline/:token', () => {
-    let testInvitation: any;
-    const invitationToken = uuidv4();
-    beforeEach(async () => {
-      const memberSeat = await prismaTesting.client.member.create({
-        data: {
-          workspace: {
-            connect: {
-              id: testWorkspace.id,
-            },
-          },
-          createdBy: {
-            connect: {
-              id: testUser.id,
-            },
-          },
-          name: 'Test User',
-          roles: { set: [WorkspaceRole.STUDENT] },
-        },
-      });
+    let testInvitation: Invitation;
+    let inviteeUser: UserWithAccount;
+    let inviteeJwt: string;
 
-      testInvitation = await prismaTesting.client.invitation.create({
-        data: {
-          type: 'WORKSPACE',
-          email: testUser.accounts[0].email,
-          token: invitationToken,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          workspaceId: testWorkspace.id,
-          inviterId: testUser.id,
-          memberSeatId: memberSeat.id,
-        },
+    beforeEach(async () => {
+      // Create user who will decline the invitation
+      const inviteeData = await testService.createMockUser();
+      inviteeUser = inviteeData.user;
+
+      const inviteeCreds = await signInTest(
+        app,
+        inviteeData.email,
+        inviteeData.password,
+      );
+      inviteeJwt = inviteeCreds.accessToken;
+
+      // Create invitation
+      const invitations = await testService.createWorkspaceInvitations(
+        testWorkspace.id,
+        testUser.id,
+        [
+          {
+            email: inviteeUser.accounts[0].email,
+            firstName: inviteeUser.firstName,
+            lastName: inviteeUser.lastName,
+            memberName: `${inviteeUser.firstName} ${inviteeUser.lastName}`,
+            roles: [WorkspaceRole.STUDENT],
+          },
+        ],
+      );
+      testInvitation = invitations[0];
+
+      // Update mock user for declining
+      app.use((req, res, next) => {
+        req.user = inviteeUser;
+        next();
       });
     });
 
     it('should decline an invitation successfully', async () => {
       const response = await request(app.getHttpServer())
-        .post('/invitations/decline/' + invitationToken)
+        .post(`/invitations/decline/${testInvitation.token}`)
+        .set('Authorization', `Bearer ${inviteeJwt}`)
         .expect(200);
 
       expect(response.body).toEqual(
         expect.objectContaining({
           id: testInvitation.id,
           status: InvitationStatus.DECLINED,
-          inviteeId: testUser.id,
+          inviteeId: inviteeUser.id,
         }),
       );
 
       // Verify invitation status in database
-      const updatedInvitation =
-        await prismaTesting.client.invitation.findUnique({
-          where: { id: testInvitation.id },
-        });
+      const updatedInvitation = await testService.client.invitation.findUnique({
+        where: { id: testInvitation.id },
+      });
       expect(updatedInvitation!.status).toBe(InvitationStatus.DECLINED);
     });
 
     it('should return 404 when token not found', async () => {
+      const randomToken = uuidv4();
       await request(app.getHttpServer())
-        .post('/invitations/decline/' + uuidv4())
+        .post(`/invitations/decline/${randomToken}`)
+        .set('Authorization', `Bearer ${inviteeJwt}`)
         .expect(404);
     });
 
     it('should return 400 when invitation is already declined', async () => {
       // First decline
-      const token = uuidv4();
       await request(app.getHttpServer())
-        .post('/invitations/decline/' + token)
+        .post(`/invitations/decline/${testInvitation.token}`)
+        .set('Authorization', `Bearer ${inviteeJwt}`)
         .expect(200);
 
       // Try to decline again
       await request(app.getHttpServer())
-        .post('/invitations/decline/' + token)
+        .post(`/invitations/decline/${testInvitation.token}`)
+        .set('Authorization', `Bearer ${inviteeJwt}`)
         .expect(400);
     });
   });
 
   describe('End-to-End Workflow', () => {
     it('should complete full invitation workflow', async () => {
+      const workflowEmail = TestDataFactory.createUniqueEmail('workflow');
+
       // 1. Create invitation
       const createDto: CreateWorkspaceInvitationDto = {
-        email: 'workflow@example.com',
-        workspaceSlug: 'test-workspace',
-        memberSeatId: otherUser.id,
+        email: workflowEmail,
+        workspaceSlug: testWorkspace.slug,
+        memberSeatId: emptySeat.id,
         type: 'workspace',
       };
 
       const createResponse = await request(app.getHttpServer())
-        .post('/invitations/workspace/test-workspace')
+        .post(`/invitations/workspace/${testWorkspace.slug}`)
+        .set('Authorization', `Bearer ${testUserJwt}`)
         .send(createDto)
         .expect(201);
 
       const invitationToken = createResponse.body.token;
 
+      const { accessToken, user } = await signUpTest(
+        app,
+        testService.client,
+        mailService,
+        workflowEmail,
+        'Workflow',
+        'User',
+        'password123',
+      );
+
       // 2. Get invitation by token (as if user clicked link)
       const getResponse = await request(app.getHttpServer())
         .get(`/invitations/token/${invitationToken}`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 
       expect(getResponse.body.status).toBe(InvitationStatus.PENDING);
 
-      // 3. Create a new user account that matches the invitation email
-      const newUser = await prismaTesting.client.user.create({
-        data: {
-          firstName: 'Workflow',
-          lastName: 'User',
-          accounts: {
-            create: {
-              provider: 'LOCAL',
-              email: 'workflow@example.com',
-              password: 'hashedpassword',
-              isEmailVerified: true,
-            },
-          },
-        },
-        include: {
-          accounts: true,
-        },
-      });
-
-      // Update request.user to the new user
-      app.use((req, res, next) => {
-        req.user = newUser;
-        next();
-      });
-
       // 4. Accept invitation
       const acceptResponse = await request(app.getHttpServer())
         .post(`/invitations/accept/${invitationToken}`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 
       expect(acceptResponse.body.status).toBe(InvitationStatus.ACCEPTED);
-      expect(acceptResponse.body.inviteeId).toBe(newUser.id);
+      expect(acceptResponse.body.inviteeId).toBe(user.id);
 
       // 5. Verify user is now a member
-      const member = await prismaTesting.client.member.findUnique({
+      const member = await testService.client.member.findUnique({
         where: { id: acceptResponse.body.memberSeatId },
       });
-      expect(member!.userId).toBe(newUser.id);
+      expect(member!.userId).toBe(user.id);
 
       // 6. Verify invitation appears in workspace invitations list
       const listResponse = await request(app.getHttpServer())
-        .get('/invitations/workspace/test-workspace')
+        .get(`/invitations/workspace/${testWorkspace.slug}`)
+        .set('Authorization', `Bearer ${testUserJwt}`)
         .expect(200);
 
       const acceptedInvitation = listResponse.body.find(

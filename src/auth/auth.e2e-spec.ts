@@ -16,9 +16,9 @@ import { PaginationModule } from '@/pagination/pagination.module';
   expectAccountShape,
   expectUserShapeWithoutToken,
   expectUserShapeWithToken,
-} from '@/test/assertions';*/ // TODO
-import { MockMailService } from '@/test/mock-mail.service';
-import { PrismaTestingService } from '@/test/prisma-testing.service';
+} from '@/test/helpers/assertions';*/ // TODO
+import { PrismaTestingService } from '@/test/helpers/prisma-testing.service';
+import { MockMailService } from '@/test/mock-services/mock-mail.service';
 
 describe('Auth flow', () => {
   let app: INestApplication;

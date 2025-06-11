@@ -9,7 +9,6 @@ export class ParseWorkspaceSlugPipe implements PipeTransform {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async transform(slug: string, metadata: ArgumentMetadata) {
-    //console.log('additional options', metadata.data);
-    return await this.workspaceService.findWorkspaceBySlug(slug);
+    return await this.workspaceService.getWorkspaceBySlug(slug);
   }
 }

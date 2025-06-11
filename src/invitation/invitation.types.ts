@@ -1,11 +1,11 @@
 import { Prisma } from '@prisma/client';
 
 const inviteWithWorkspace = Prisma.validator<Prisma.InvitationDefaultArgs>()({
-  include: { workspace: true },
+  include: { workspace: true, event: true },
 });
 
 const inviteWithInviter = Prisma.validator<Prisma.InvitationDefaultArgs>()({
-  include: { inviter: true, workspace: true },
+  include: { inviter: true, workspace: true, event: true },
 });
 
 export type InviteWithWorkspace = Prisma.InvitationGetPayload<

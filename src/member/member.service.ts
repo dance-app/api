@@ -66,7 +66,7 @@ export class MemberService {
    * @param workspaceId The workspace ID
    * @param userId The user ID
    * @returns The membership or null if not found
-   */
+   */ // TODO: duplicate method: getMemberByUserId
   async findUserMembershipInWorkspace(workspaceId: number, userId: number) {
     return this.database.member.findFirst({
       where: {

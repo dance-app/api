@@ -8,7 +8,7 @@ const config: Config.InitialOptions = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   rootDir: '../',
-  setupFiles: ['<rootDir>/test/setup-env.ts'],
+  setupFiles: ['<rootDir>/test/setup/setup-env.ts'],
   moduleFileExtensions: ['js', 'ts', 'json'],
   testMatch: ['<rootDir>/**/*.e2e-spec.ts'],
   transform: {

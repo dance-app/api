@@ -1,6 +1,9 @@
+import { Injectable, Logger } from '@nestjs/common';
 import { AccountProvider } from '@prisma/client';
 
+@Injectable()
 export class MockMailService {
+  private readonly logger = new Logger(MockMailService.name);
   sentMails: Array<{
     to: string;
     subject: string;
@@ -16,6 +19,7 @@ export class MockMailService {
     email: string,
     providers: AccountProvider[],
   ): void {
+    this.logger.debug(`sendSSOAccountReminderEmail to ${email}`);
     this.sentMails.push({
       to: email,
       subject: 'Use SSO to connect',
@@ -24,7 +28,8 @@ export class MockMailService {
     });
   }
 
-  sendEmailConfirmation(email: string, token: string) {
+  async sendEmailConfirmation(email: string, token: string) {
+    this.logger.debug(`sendEmailConfirmation to ${email}`);
     this.sentMails.push({
       to: email,
       subject: 'Verify your email address',
@@ -34,6 +39,7 @@ export class MockMailService {
   }
 
   sendPasswordReset(email: string, token: string) {
+    this.logger.debug(`sendPasswordReset to ${email}`);
     this.sentMails.push({
       to: email,
       subject: 'Reset Your Password',
@@ -43,6 +49,7 @@ export class MockMailService {
   }
 
   sendPasswordChangedConfirmation(to: string) {
+    this.logger.debug(`sendPasswordChangedConfirmation to ${to}`);
     this.sentMails.push({
       to,
       subject: 'Your Password Has Been Changed',
@@ -50,14 +57,15 @@ export class MockMailService {
     });
   }
 
-  async sendWorkspaceInviteEmail(
+  sendWorkspaceInviteEmail(
     email: string,
     inviteToken: string,
     inviterName: string,
     workspaceName: string,
     assignedRole: string,
     roleDescription: string,
-  ): Promise<void> {
+  ): void {
+    this.logger.debug(`sendWorkspaceInviteEmail to ${email}`);
     this.sentMails.push({
       to: email,
       subject: 'Workspace Invitation',
@@ -72,7 +80,7 @@ export class MockMailService {
     });
   }
 
-  async sendEventInviteEmail(
+  sendEventInviteEmail(
     email: string,
     eventName: string,
     inviteToken: string,
@@ -82,7 +90,8 @@ export class MockMailService {
     eventLocation: string,
     eventDescription: string | undefined,
     additionalInfo: string | undefined,
-  ): Promise<void> {
+  ): void {
+    this.logger.debug(`sendEventInviteEmail to ${email}`);
     this.sentMails.push({
       to: email,
       subject: 'Event Invitation',
