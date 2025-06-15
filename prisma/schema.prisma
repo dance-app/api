@@ -40,6 +40,11 @@ model User {
   createdWorkspaces Workspace[]
   createdMembers Member[] @relation("createdMembers")
 
+  // Materials relationships
+  createdMaterials Material[] @relation("createdMaterials")
+  receivedMaterials MaterialStudentShare[] @relation("receivedMaterials")
+  sharedMaterials MaterialStudentShare[] @relation("sharedMaterials")
+
   @@map("users")
 }
 
@@ -47,7 +52,7 @@ model NotificationPreferences {
   id                      Int     @id @default(autoincrement())
   userId                  Int     @unique
   emailNotificationsEnabled Boolean @default(true)
-  
+
   user                    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -111,6 +116,7 @@ model Workspace {
   members Member[]
   events Event[]
   invitations Invitation[]
+  materials Material[]
 
   @@map("workspaces")
 }
@@ -124,6 +130,8 @@ model WorkspaceConfig {
 
   workspace Workspace @relation(fields: [workspaceId], references: [id])
   workspaceId Int @unique
+
+  danceTypes DanceType[] @relation("workspaceDanceTypes")
 
   @@map("workspaceConfig")
 }
@@ -183,6 +191,8 @@ model Event {
   attendees Attendee[]
 
   invitations Invitation[]
+  materials Material[] @relation("eventMaterials")
+  danceTypes DanceType[] @relation("eventDanceTypes")
 
   organizer Workspace @relation(fields: [organizerId], references: [id])
   organizerId Int
@@ -279,6 +289,92 @@ model Invitation {
   @@map("invitations")
 }
 
+model DanceType {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  name String @unique
+  type DanceTypeEnum
+  category DanceCategory?
+  description String?
+
+  // Events can reference dance types
+  events Event[] @relation("eventDanceTypes")
+  
+  // Materials of this dance type
+  materials Material[] @relation("materialDanceType")
+  
+  // Workspace that offers this dance type
+  workspaceConfigs WorkspaceConfig[] @relation("workspaceDanceTypes")
+
+  @@map("dance_types")
+}
+
+model Material {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+
+  name String
+  description String?
+
+  videoUrls String[]
+  imageUrls String[]
+
+  // Visibility and ownership
+  visibility MaterialVisibility @default(PRIVATE)
+
+  // Creator/Owner
+  createdBy User @relation("createdMaterials", fields: [createdById], references: [id])
+  createdById Int
+
+  // Workspace scope (null if private or public)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id])
+  workspaceId Int?
+
+  // Hierarchical relationships - self-referencing for composite materials
+  parentMaterial Material? @relation("MaterialHierarchy", fields: [parentMaterialId], references: [id])
+  parentMaterialId Int?
+  childMaterials Material[] @relation("MaterialHierarchy")
+
+  // Events that use this material
+  events Event[] @relation("eventMaterials")
+
+  // Dance type relationship
+  danceType DanceType? @relation("materialDanceType", fields: [danceTypeId], references: [id])
+  danceTypeId Int?
+
+  // Individual student shares (optional feature)
+  studentShares MaterialStudentShare[]
+
+  @@map("materials")
+}
+
+model MaterialStudentShare {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  materialId Int
+
+  student User @relation("receivedMaterials", fields: [studentId], references: [id])
+  studentId Int
+
+  sharedBy User @relation("sharedMaterials", fields: [sharedById], references: [id])
+  sharedById Int
+
+  // Tracking
+  viewedAt DateTime?
+  canDownload Boolean @default(false)
+  expiresAt DateTime?
+
+  @@unique([materialId, studentId])
+  @@map("material_student_shares")
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Enums
 ////////////////////////////////////////////////////////////////////////////////
@@ -333,4 +429,49 @@ enum NotificationType {
   INVITATION_RECEIVED
   WORKSPACE_MEMBER_JOINED
   // Add other types as needed
+}
+
+enum DanceCategory {
+  LATIN
+  BALLROOM
+  SWING
+  FOLK
+  COUNTRY
+  CONTEMPORARY
+  OTHER
+}
+
+enum DanceTypeEnum {
+  SALSA
+  BACHATA
+  KIZOMBA
+  MERENGUE
+  CHA_CHA
+  RUMBA
+  SAMBA
+  WALTZ
+  TANGO
+  QUICKSTEP
+  VIENNESE_WALTZ
+  LINDY_HOP
+  EAST_COAST_SWING
+  WEST_COAST_SWING
+  BALBOA
+  CHARLESTON
+  ARGENTINE_TANGO
+  MILONGA
+  VALS
+  BLUES
+  ZOUK
+  LAMBADA
+  MAMBO
+  CASINO
+  RUEDA
+  OTHER
+}
+
+enum MaterialVisibility {
+  PRIVATE
+  WORKSPACE
+  PUBLIC
 }

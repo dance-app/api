@@ -18,6 +18,9 @@ Table users {
   receivedInvitations invitations [not null]
   createdWorkspaces workspaces [not null]
   createdMembers members [not null]
+  createdMaterials materials [not null]
+  receivedMaterials material_student_shares [not null]
+  sharedMaterials material_student_shares [not null]
 }
 
 Table NotificationPreferences {
@@ -71,6 +74,7 @@ Table workspaces {
   members members [not null]
   events events [not null]
   invitations invitations [not null]
+  materials materials [not null]
 }
 
 Table workspaceConfig {
@@ -80,6 +84,7 @@ Table workspaceConfig {
   weekStart WeekStart [not null]
   workspace workspaces [not null]
   workspaceId Int [unique, not null]
+  danceTypes dance_types [not null]
 }
 
 Table members {
@@ -116,6 +121,8 @@ Table events {
   rule String[] [not null]
   attendees attendees [not null]
   invitations invitations [not null]
+  materials materials [not null]
+  danceTypes dance_types [not null]
   organizer workspaces [not null]
   organizerId Int [not null]
 }
@@ -175,6 +182,75 @@ Table invitations {
   notifications Notification [not null]
 }
 
+Table dance_types {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  name String [unique, not null]
+  type DanceTypeEnum [not null]
+  category DanceCategory
+  description String
+  events events [not null]
+  materials materials [not null]
+  workspaceConfigs workspaceConfig [not null]
+}
+
+Table materials {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  deletedAt DateTime
+  name String [not null]
+  description String
+  videoUrls String[] [not null]
+  imageUrls String[] [not null]
+  visibility MaterialVisibility [not null, default: 'PRIVATE']
+  createdBy users [not null]
+  createdById Int [not null]
+  workspace workspaces
+  workspaceId Int
+  parentMaterial materials
+  parentMaterialId Int
+  childMaterials materials [not null]
+  events events [not null]
+  danceType dance_types
+  danceTypeId Int
+  studentShares material_student_shares [not null]
+}
+
+Table material_student_shares {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  material materials [not null]
+  materialId Int [not null]
+  student users [not null]
+  studentId Int [not null]
+  sharedBy users [not null]
+  sharedById Int [not null]
+  viewedAt DateTime
+  canDownload Boolean [not null, default: false]
+  expiresAt DateTime
+
+  indexes {
+    (materialId, studentId) [unique]
+  }
+}
+
+Table workspaceDanceTypes {
+  dancetypesId Int [ref: > dance_types.id]
+  workspaceconfigsId Int [ref: > workspaceConfig.id]
+}
+
+Table eventMaterials {
+  materialsId Int [ref: > materials.id]
+  eventsId Int [ref: > events.id]
+}
+
+Table eventDanceTypes {
+  dancetypesId Int [ref: > dance_types.id]
+  eventsId Int [ref: > events.id]
+}
+
 Enum AccountProvider {
   LOCAL
   GOOGLE
@@ -224,6 +300,51 @@ Enum NotificationType {
   WORKSPACE_MEMBER_JOINED
 }
 
+Enum DanceCategory {
+  LATIN
+  BALLROOM
+  SWING
+  FOLK
+  COUNTRY
+  CONTEMPORARY
+  OTHER
+}
+
+Enum DanceTypeEnum {
+  SALSA
+  BACHATA
+  KIZOMBA
+  MERENGUE
+  CHA_CHA
+  RUMBA
+  SAMBA
+  WALTZ
+  TANGO
+  QUICKSTEP
+  VIENNESE_WALTZ
+  LINDY_HOP
+  EAST_COAST_SWING
+  WEST_COAST_SWING
+  BALBOA
+  CHARLESTON
+  ARGENTINE_TANGO
+  MILONGA
+  VALS
+  BLUES
+  ZOUK
+  LAMBADA
+  MAMBO
+  CASINO
+  RUEDA
+  OTHER
+}
+
+Enum MaterialVisibility {
+  PRIVATE
+  WORKSPACE
+  PUBLIC
+}
+
 Ref: NotificationPreferences.userId - users.id [delete: Cascade]
 
 Ref: accounts.userId > users.id
@@ -263,3 +384,17 @@ Ref: invitations.memberSeatId - members.id
 Ref: invitations.eventId > events.id
 
 Ref: invitations.attendeeSeatId - attendees.id
+
+Ref: materials.createdById > users.id
+
+Ref: materials.workspaceId > workspaces.id
+
+Ref: materials.parentMaterialId - materials.id
+
+Ref: materials.danceTypeId > dance_types.id
+
+Ref: material_student_shares.materialId > materials.id [delete: Cascade]
+
+Ref: material_student_shares.studentId > users.id
+
+Ref: material_student_shares.sharedById > users.id

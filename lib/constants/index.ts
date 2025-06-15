@@ -17,4 +17,13 @@ export const MOCK_USER = {
     isSuperAdmin: false,
     isVerified: true,
   },
+  SYSTEM: {
+    id: 'system',
+    firstName: 'System',
+    lastName: 'User',
+    email: 'system@email.com',
+    password: 'adminadmin',
+    isSuperAdmin: true,
+    isVerified: true,
+  },
 };
