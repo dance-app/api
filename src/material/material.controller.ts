@@ -49,7 +49,11 @@ export class MaterialController {
     @GetAuthUser('workspaces') userWorkspaces: any[], // This should be typed based on your auth system
   ): Promise<PaginatedResponseDto<MaterialResponseDto>> {
     const workspaceIds = userWorkspaces?.map((w) => w.workspaceId) || [];
-    return this.materialService.findMaterials(searchDto, userId, workspaceIds);
+    return this.materialService.findMaterials({
+      searchDto,
+      userId,
+      workspaceIds,
+    });
   }
 
   @Get('shared')

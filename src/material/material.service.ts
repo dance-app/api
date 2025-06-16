@@ -89,11 +89,15 @@ export class MaterialService {
   }
 
   // Find materials with search and filtering
-  async findMaterials(
-    searchDto: SearchMaterialsDto,
-    userId: number,
-    workspaceIds: number[] = [],
-  ): Promise<PaginatedResponseDto<MaterialResponseDto>> {
+  async findMaterials({
+    searchDto,
+    userId,
+    workspaceIds = [],
+  }: {
+    searchDto: SearchMaterialsDto;
+    userId: number;
+    workspaceIds: number[];
+  }): Promise<PaginatedResponseDto<MaterialResponseDto>> {
     const { skip, take } = this.pagination.extractPaginationOptions(searchDto);
 
     // Build where clause based on visibility and access

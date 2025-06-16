@@ -23,10 +23,10 @@ import { WorkspaceService } from './workspace.service';
 
 import { GetAuthUser } from '@/auth/decorator';
 import { JwtGuard } from '@/auth/guard';
-import { MemberService } from '@/member/member.service';
+import { SearchMaterialsDto } from '@/material/dto';
+import { MaterialService } from '@/material/material.service';
 import { GetPagination } from '@/pagination/decorator';
 import { PaginationDto } from '@/pagination/dto';
-import { UserService } from '@/user/user.service';
 import { UserWithAccount } from '@/user/user.types';
 
 @ApiBearerAuth()
@@ -35,8 +35,7 @@ import { UserWithAccount } from '@/user/user.types';
 export class WorkspaceController {
   constructor(
     private workspaceService: WorkspaceService,
-    private memberService: MemberService,
-    private userService: UserService,
+    private materialService: MaterialService,
   ) {}
 
   @Post()
@@ -91,5 +90,30 @@ export class WorkspaceController {
   @RequireWorkspaceRoles(WorkspaceRole.OWNER)
   async delete(@Param('id') id: string) {
     return await this.workspaceService.delete(Number(id));
+  }
+
+  @Get(':slug/materials')
+  @UseGuards(CanViewWorkspaceGuard)
+  async getWorkspaceMaterials(
+    @Param('slug') slug: string,
+    @GetPagination() searchDto: SearchMaterialsDto,
+    @GetAuthUser() user: UserWithAccount,
+  ) {
+    const workspace = await this.workspaceService.getWorkspaceBySlug(slug);
+
+    if (!workspace) {
+      throw new BadRequestException(`Workspace with slug "${slug}" not found`);
+    }
+    // Set the workspace filter to only show materials for this workspace
+    const workspaceSearchDto = {
+      ...searchDto,
+      slug,
+    };
+
+    return this.materialService.findMaterials({
+      searchDto: workspaceSearchDto,
+      userId: user.id,
+      workspaceIds: [workspace.id],
+    });
   }
 }
