@@ -105,6 +105,7 @@ model Workspace {
   id Int @id @default(autoincrement())
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
   
   createdById Int // ID of the user who created this workspace
   createdBy User @relation(fields: [createdById], references: [id])

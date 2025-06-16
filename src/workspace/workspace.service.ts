@@ -54,8 +54,11 @@ export class WorkspaceService {
   }
 
   async readAll(paginationOptions: PaginationDto) {
-    const totalCount = await this.database.workspace.count();
+    const totalCount = await this.database.workspace.count({
+      where: { deletedAt: null },
+    });
     const data = await this.database.workspace.findMany({
+      where: { deletedAt: null },
       ...this.pagination.extractPaginationOptions(paginationOptions),
     });
 
@@ -71,7 +74,10 @@ export class WorkspaceService {
 
   async readById(payload: Pick<Workspace, 'id'>) {
     const data = await this.database.workspace.findFirst({
-      where: { id: payload.id },
+      where: {
+        id: payload.id,
+        deletedAt: null,
+      },
     });
 
     return {
@@ -82,6 +88,7 @@ export class WorkspaceService {
   async readMyWorkspaces(user: UserWithAccount) {
     const result = await this.database.workspace.findMany({
       where: {
+        deletedAt: null,
         members: {
           some: {
             userId: user.id,
@@ -111,9 +118,12 @@ export class WorkspaceService {
     // Generate slug if not provided
     const workspaceSlug = slug || this.generateSlug(name);
 
-    // Check if slug is unique
-    const existingWorkspace = await this.database.workspace.findUnique({
-      where: { slug: workspaceSlug },
+    // Check if slug is unique (including soft-deleted workspaces)
+    const existingWorkspace = await this.database.workspace.findFirst({
+      where: {
+        slug: workspaceSlug,
+        deletedAt: null,
+      },
     });
 
     if (existingWorkspace) {
@@ -181,12 +191,28 @@ export class WorkspaceService {
   }
 
   async delete(id: number) {
-    const data = await this.database.workspace.delete({
+    // Check if workspace exists and is not already deleted
+    const workspace = await this.database.workspace.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+      },
+    });
+
+    if (!workspace) {
+      throw new NotFoundException(`Workspace with ID ${id} not found`);
+    }
+
+    // Soft delete the workspace
+    const data = await this.database.workspace.update({
       where: { id },
+      data: {
+        deletedAt: new Date(),
+      },
     });
 
     return {
-      message: 'User deleted',
+      message: 'Workspace deleted',
       data,
     };
   }
@@ -197,8 +223,11 @@ export class WorkspaceService {
    * @returns The workspace or null if not found
    */
   async findWorkspaceBySlug(slug: string, include?: Prisma.WorkspaceInclude) {
-    return this.database.workspace.findUnique({
-      where: { slug },
+    return this.database.workspace.findFirst({
+      where: {
+        slug,
+        deletedAt: null,
+      },
       include,
     });
   }
@@ -223,6 +252,7 @@ export class WorkspaceService {
     const workspace = await this.database.workspace.findFirst({
       where: {
         slug,
+        deletedAt: null,
       },
     });
 
@@ -232,6 +262,7 @@ export class WorkspaceService {
 
     const result = await this.database.workspace.findFirst({
       where: {
+        deletedAt: null,
         members: {
           some: {
             userId: user.id,
