@@ -12,13 +12,20 @@ export class PrismaTestingService {
   client = new PrismaClient();
   async reset() {
     return await this.client.$transaction([
-      this.client.invitation.deleteMany(),
+      this.client.materialStudentShare.deleteMany(),
+      this.client.notification.deleteMany(),
       this.client.attendee.deleteMany(),
+      this.client.material.deleteMany(),
+      this.client.invitation.deleteMany(),
       this.client.event.deleteMany(),
       this.client.member.deleteMany(),
       this.client.workspaceConfig.deleteMany(),
       this.client.workspace.deleteMany(),
+      this.client.emailConfirmationToken.deleteMany(),
+      this.client.passwordResetToken.deleteMany(),
       this.client.account.deleteMany(),
+      this.client.notificationPreferences.deleteMany(),
+      this.client.danceType.deleteMany(),
       this.client.user.deleteMany(),
     ]);
   }
