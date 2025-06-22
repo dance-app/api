@@ -386,7 +386,7 @@ async function main() {
       data: membersA.map((m, idx) => ({
         eventId: event.id,
         role: idx % 2 === 0 ? DanceRole.LEADER : DanceRole.FOLLOWER,
-        type: AttendanceType.VALIDATE,
+        userId: m.userId,
       })),
     });
   }
