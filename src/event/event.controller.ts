@@ -3,7 +3,6 @@ import {
   Get,
   Post,
   Patch,
-  Delete,
   Body,
   Param,
   Query,
@@ -49,7 +48,7 @@ import {
 } from '@/workspace/guard';
 
 @ApiTags('events')
-@Controller('workspace/:slug/events')
+@Controller('workspaces/:slug/events')
 @ApiParam({
   name: 'slug',
   type: 'string',
@@ -225,7 +224,7 @@ export class EventController {
 export class PublicEventController {
   constructor(private eventService: EventService) {}
 
-  @Get('workspace/:slug')
+  @Get('workspaces/:slug')
   //@UseGuards(OptionalJwtGuard)
   @ApiOperation({ summary: 'Get public events for a workspace' })
   @ApiParam({ name: 'slug', description: 'Workspace slug' })

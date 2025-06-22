@@ -30,6 +30,7 @@ export class PrismaTestingService {
   async reset() {
     // Order matters due to foreign key constraints
     const deleteOperations = [
+      this.client.materialStudentShare.deleteMany(),
       this.client.attendanceHistory.deleteMany(),
       this.client.notification.deleteMany(),
       this.client.invitation.deleteMany(),

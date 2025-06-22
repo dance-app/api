@@ -36,7 +36,7 @@ import {
 
 @ApiBearerAuth()
 @UseGuards(JwtGuard, CanViewWorkspaceGuard, WorkspaceRolesGuard)
-@Controller('workspace/:slug/members')
+@Controller('workspaces/:slug/members')
 @ApiParam({
   name: 'slug',
   type: 'string',

@@ -187,6 +187,14 @@ describe('Teacher invites registered user to workspace', () => {
         );
         expect(latestNotification.read).toBe(false);
         expect(latestNotification.invitationId).toBeDefined();
+        // expect(latestNotification.metadata).toEqual(
+        //   expect.objectContaining({
+        //     invitationId: testState.workspaceInvite!.id,
+        //     workspaceName: testState.workspace!.name,
+        //     workspaceSlug: testState.workspace!.slug,
+        //     inviterName: expect.any(String),
+        //   }),
+        // );
       },
     },
     {
@@ -310,6 +318,13 @@ describe('Teacher invites registered user to workspace', () => {
         );
         /*expect(latestNotification.workspaceId).toBeDefined();
         expect(latestNotification.workspaceId).toEqual(testState.workspace!.id);*/
+        // expect(latestNotification.metadata).toEqual(
+        //   expect.objectContaining({
+        //     workspaceName: testState.workspace!.name,
+        //     workspaceSlug: testState.workspace!.slug,
+        //     memberRole: WorkspaceRole.STUDENT,
+        //   }),
+        // );
       },
     },
     {

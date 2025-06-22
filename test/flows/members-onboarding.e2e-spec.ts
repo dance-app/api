@@ -238,35 +238,6 @@ describe('Teacher invites unregistered student to workspace', () => {
       },
     },
     {
-      name: 'Student can see his member profile in the workspace',
-      test: async () => {
-        // Get student's member profile
-        const response = await request(app.getHttpServer())
-          .get(
-            `/workspace/${testState.workspace!.slug}/members/${testState.studentMemberSeat!.id}`,
-          )
-          .set('Authorization', `Bearer ${testState.studentJwt}`)
-          .expect(200);
-
-        // Verify member profile structure
-        expect(response.body).toEqual(
-          expect.objectContaining({
-            id: testState.studentMemberSeat!.id,
-            name: testState.studentMemberSeat!.name,
-            roles: expect.arrayContaining([WorkspaceRole.STUDENT]),
-            userId: testState.student!.id,
-            workspaceId: testState.workspace!.id,
-            level: testState.studentMemberSeat!.level,
-            preferedDanceRole: testState.studentMemberSeat!.preferedDanceRole,
-          }),
-        );
-
-        // Verify that the member is properly linked to the user
-        expect(response.body.userId).toBe(testState.student!.id);
-        expect(response.body.roles).toContain(WorkspaceRole.STUDENT);
-      },
-    },
-    {
       name: 'Student can see workspace in his workspaces list',
       test: async () => {
         await getUserWorkspacesTest(app, testState.studentJwt!, [

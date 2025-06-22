@@ -41,7 +41,7 @@ Workspace teachers and owners can create and manage events, while attendance is 
 
 #### Create Event
 ```
-POST /workspace/:slug/events
+POST /workspaces/:slug/events
 ```
 - **Access**: Teachers, Owners
 - **Body**: `CreateEventDto`
@@ -49,7 +49,7 @@ POST /workspace/:slug/events
 
 #### Get Workspace Events  
 ```
-GET /workspace/:slug/events
+GET /workspaces/:slug/events
 ```
 - **Access**: Based on event visibility
 - **Query**: `SearchEventsDto`, pagination
@@ -57,14 +57,14 @@ GET /workspace/:slug/events
 
 #### Get Event Details
 ```
-GET /workspace/:slug/events/:id
+GET /workspaces/:slug/events/:id
 ```
 - **Access**: Based on event visibility
 - **Returns**: `EventResponseDto`
 
 #### Update Event
 ```
-PATCH /workspace/:slug/events/:id
+PATCH /workspaces/:slug/events/:id
 ```
 - **Access**: Event organizers
 - **Body**: `UpdateEventDto`
@@ -72,7 +72,7 @@ PATCH /workspace/:slug/events/:id
 
 #### Cancel Event
 ```
-POST /workspace/:slug/events/:id/cancel
+POST /workspaces/:slug/events/:id/cancel
 ```
 - **Access**: Event organizers
 - **Body**: `CancelEventDto`
@@ -82,7 +82,7 @@ POST /workspace/:slug/events/:id/cancel
 
 #### Create Attendee (by Organizers)
 ```
-POST /workspace/:slug/events/:eventId/attendee
+POST /workspaces/:slug/events/:eventId/attendee
 ```
 - **Access**: Event organizers
 - **Body**: `CreateAttendeeDto`
@@ -91,7 +91,7 @@ POST /workspace/:slug/events/:eventId/attendee
 
 #### Update Attendance (by Attendees)
 ```
-POST /workspace/:slug/events/:id/attend
+POST /workspaces/:slug/events/:id/attend
 ```
 - **Access**: Public (no JWT required)
 - **Body**: `AttendEventDto`

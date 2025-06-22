@@ -20,7 +20,7 @@ export async function createEvent(
   visibility: EventVisibility,
 ) {
   await request(app.getHttpServer())
-    .post(`/workspace/${workspaceSlug}/events`)
+    .post(`/workspaces/${workspaceSlug}/events`)
     .set('Authorization', `Bearer ${creatorJwt}`)
     .send({
       name,
@@ -255,7 +255,7 @@ export async function createWorkspaceSeatTest(
     roles: [role],
   };
   const response = await request(app.getHttpServer())
-    .post(`/workspace/${workspaceSlug}/members`)
+    .post(`/workspaces/${workspaceSlug}/members`)
     .set('Authorization', `Bearer ${userJwt}`)
     .send(addMemberPayload)
     .expect(201);
@@ -670,7 +670,7 @@ export async function getWorkspaceDetailsTest(
   },
 ) {
   const response = await request(app.getHttpServer())
-    .get(`/workspaces/slug/${workspaceSlug}`)
+    .get(`/workspaces/${workspaceSlug}`)
     .set('Authorization', `Bearer ${userJwt}`)
     .expect(200);
 
@@ -692,7 +692,7 @@ export async function updateWorkspaceTest(
   app: INestApplication,
   prisma: PrismaClient,
   userJwt: string,
-  workspaceId: number,
+  workspaceSlug: string,
   updateData: {
     name: string;
     slug: string;
@@ -704,7 +704,7 @@ export async function updateWorkspaceTest(
   },
 ) {
   const response = await request(app.getHttpServer())
-    .patch(`/workspaces/${workspaceId}`)
+    .patch(`/workspaces/${workspaceSlug}`)
     .set('Authorization', `Bearer ${userJwt}`)
     .send(updateData)
     .expect(200);
@@ -722,7 +722,7 @@ export async function updateWorkspaceTest(
 
   // Verify database was updated
   const dbWorkspace = await prisma.workspace.findUnique({
-    where: { id: workspaceId },
+    where: { slug: workspaceSlug },
   });
 
   expect(dbWorkspace).toBeTruthy();
@@ -748,7 +748,7 @@ export async function getMemberProfileTest(
   },
 ) {
   const response = await request(app.getHttpServer())
-    .get(`/workspace/${workspaceSlug}/members/${memberId}`)
+    .get(`/workspaces/${workspaceSlug}/members/${memberId}`)
     .set('Authorization', `Bearer ${userJwt}`)
     .expect(200);
 

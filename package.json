@@ -8,11 +8,11 @@
   "scripts": {
     "build": "pnpm run db:dev:generate && pnpm run db:dev:migrate && nest build",
     "build:render": "export NODE_ENV=render && npx prisma generate && npx prisma migrate deploy && nest build",
-    "db:dev:debug": "npx prisma studio --browser none",
-    "db:dev:generate": "npx prisma generate",
-    "db:dev:deploy": "prisma migrate deploy",
-    "db:dev:migrate": "npx prisma migrate dev",
-    "db:dev:reset": "npx prisma migrate reset --force && pnpm run seed",
+    "db:dev:debug": "dotenv -e .env.dev -- npx prisma studio --browser none",
+    "db:dev:generate": "dotenv -e .env.dev -- npx prisma generate",
+    "db:dev:deploy": "dotenv -e .env.dev -- prisma migrate deploy",
+    "db:dev:migrate": "dotenv -e .env.dev -- npx prisma migrate dev",
+    "db:dev:reset": "dotenv -e .env.dev -- npx prisma migrate reset --force && dotenv -e .env.dev -- pnpm run seed",
     "db:dev:kill": "docker compose rm dev-db -s -f -v",
     "db:dev:restart": "yarn db:dev:kill && yarn db:dev:start && sleep 1 && yarn db:dev:deploy",
     "db:dev:start": "docker compose up dev-db -d",
@@ -24,7 +24,9 @@
     "db:test:reset": "docker compose rm test-db -s -f -v && docker compose up -d test-db && sleep 1 && dotenv -e .env.test -- prisma migrate reset --force",
     "docker:db:up": "docker-compose up -d dev-db",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "lint:check": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "start:debug": "export NODE_ENV=dev && nest start --debug --watch",
     "start:dev": "export NODE_ENV=dev && nest start --watch",
     "start:prod": "export NODE_ENV=production && nest start",
@@ -35,6 +37,7 @@
     "test:e2e": "pnpm run db:test:reset && jest --config ./test/jest-e2e.config.ts",
     "test:watch": "jest --watch",
     "test": "jest",
+    "typescript": "tsc --noEmit",
     "seed": "ts-node -r tsconfig-paths/register prisma/seed.ts"
   },
   "dependencies": {
@@ -57,6 +60,7 @@
     "passport-jwt": "^4.0.1",
     "prisma": "^6.8.0",
     "reflect-metadata": "^0.1.13",
+    "rrule": "^2.8.1",
     "rxjs": "^7.8.1",
     "uuid": "^11.1.0"
   },

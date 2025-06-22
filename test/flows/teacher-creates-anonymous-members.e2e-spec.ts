@@ -170,7 +170,7 @@ describe('Teacher creates anonymous members in workspace', () => {
         };
 
         const response = await request(app.getHttpServer())
-          .post(`/workspace/${testState.workspace!.slug}/members`)
+          .post(`/workspaces/${testState.workspace!.slug}/members`)
           .set('Authorization', `Bearer ${testState.teacherJwt}`)
           .send(addMemberPayload)
           .expect(201);
@@ -214,7 +214,7 @@ describe('Teacher creates anonymous members in workspace', () => {
       name: 'Teacher gets list of all members in workspace',
       test: async () => {
         const response = await request(app.getHttpServer())
-          .get(`/workspace/${testState.workspace!.slug}/members`)
+          .get(`/workspaces/${testState.workspace!.slug}/members`)
           .set('Authorization', `Bearer ${testState.teacherJwt}`)
           .expect(200);
 
@@ -257,7 +257,7 @@ describe('Teacher creates anonymous members in workspace', () => {
       test: async () => {
         // Test filtering by dancing role
         const response = await request(app.getHttpServer())
-          .get(`/workspace/${testState.workspace!.slug}/members`)
+          .get(`/workspaces/${testState.workspace!.slug}/members`)
           .query({ roles: DanceRole.FOLLOWER })
           .set('Authorization', `Bearer ${testState.teacherJwt}`)
           .expect(200);
@@ -277,7 +277,7 @@ describe('Teacher creates anonymous members in workspace', () => {
 
         // Test filtering by level
         const response2 = await request(app.getHttpServer())
-          .get(`/workspace/${testState.workspace!.slug}/members`)
+          .get(`/workspaces/${testState.workspace!.slug}/members`)
           .query({ minLevel: DanceLevel.CONFIRMED })
           .set('Authorization', `Bearer ${testState.teacherJwt}`)
           .expect(200);
@@ -301,7 +301,7 @@ describe('Teacher creates anonymous members in workspace', () => {
         // Test searching by name
         const searchTerm = 'Alice';
         const response = await request(app.getHttpServer())
-          .get(`/workspace/${testState.workspace!.slug}/members`)
+          .get(`/workspaces/${testState.workspace!.slug}/members`)
           .query({ search: searchTerm })
           .set('Authorization', `Bearer ${testState.teacherJwt}`)
           .expect(200);

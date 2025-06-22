@@ -8,6 +8,7 @@ import { validate } from './env.validation';
 import { EventModule } from './event/event.module';
 import { InvitationModule } from './invitation/invitation.module';
 import { MailModule } from './mail/mail.module';
+import { MaterialModule } from './material/material.module';
 import { MemberModule } from './member/member.module';
 import { PaginationModule } from './pagination/pagination.module';
 import { PingModule } from './ping/ping.module';
@@ -25,6 +26,8 @@ import { WorkspaceModule } from './workspace/workspace.module';
     }),
     DatabaseModule,
     EventModule,
+    InvitationModule,
+    MaterialModule,
     MemberModule,
     PaginationModule,
     PingModule,

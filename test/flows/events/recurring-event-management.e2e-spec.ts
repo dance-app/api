@@ -133,7 +133,7 @@ describe('Flow: Recurring Event Series Management', () => {
       name: 'Teacher creates weekly dance class series (10 occurrences)',
       test: async () => {
         const response = await request(app.getHttpServer())
-          .post(`/workspace/${testData.workspace.slug}/events`)
+          .post(`/workspaces/${testData.workspace.slug}/events`)
           .set('Authorization', `Bearer ${context.teacherJwt}`)
           .send(testData.recurringEvent)
           .expect(201);
@@ -260,7 +260,7 @@ describe('Flow: Recurring Event Series Management', () => {
       test: async () => {
         const response = await request(app.getHttpServer())
           .post(
-            `/workspace/${testData.workspace.slug}/events/${context.parentEvent.id}/attend`,
+            `/workspaces/${testData.workspace.slug}/events/${context.parentEvent.id}/attend`,
           )
           .set('Authorization', `Bearer ${context.studentAJwt}`)
           .send({
@@ -303,7 +303,7 @@ describe('Flow: Recurring Event Series Management', () => {
       test: async () => {
         const response = await request(app.getHttpServer())
           .post(
-            `/workspace/${testData.workspace.slug}/events/${context.specificOccurrence.id}/attend`,
+            `/workspaces/${testData.workspace.slug}/events/${context.specificOccurrence.id}/attend`,
           )
           .set('Authorization', `Bearer ${context.studentBJwt}`)
           .send({
@@ -338,7 +338,7 @@ describe('Flow: Recurring Event Series Management', () => {
 
         const response = await request(app.getHttpServer())
           .patch(
-            `/workspace/${testData.workspace.slug}/events/${context.parentEvent.id}`,
+            `/workspaces/${testData.workspace.slug}/events/${context.parentEvent.id}`,
           )
           .set('Authorization', `Bearer ${context.teacherJwt}`)
           .send({
@@ -366,7 +366,7 @@ describe('Flow: Recurring Event Series Management', () => {
 
         const response = await request(app.getHttpServer())
           .post(
-            `/workspace/${testData.workspace.slug}/events/${occurrenceToCancel.id}/cancel`,
+            `/workspaces/${testData.workspace.slug}/events/${occurrenceToCancel.id}/cancel`,
           )
           .set('Authorization', `Bearer ${context.teacherJwt}`)
           .send({
@@ -400,7 +400,7 @@ describe('Flow: Recurring Event Series Management', () => {
         // Get parent event to see series info
         const response = await request(app.getHttpServer())
           .get(
-            `/workspace/${testData.workspace.slug}/events/${context.parentEvent.id}`,
+            `/workspaces/${testData.workspace.slug}/events/${context.parentEvent.id}`,
           )
           .set('Authorization', `Bearer ${context.studentAJwt}`)
           .expect(200);
@@ -413,7 +413,7 @@ describe('Flow: Recurring Event Series Management', () => {
         // Check specific cancelled occurrence
         const cancelledResponse = await request(app.getHttpServer())
           .get(
-            `/workspace/${testData.workspace.slug}/events/${context.childEvents[2].id}`,
+            `/workspaces/${testData.workspace.slug}/events/${context.childEvents[2].id}`,
           )
           .set('Authorization', `Bearer ${context.studentAJwt}`)
           .expect(200);
@@ -428,7 +428,7 @@ describe('Flow: Recurring Event Series Management', () => {
       test: async () => {
         const response = await request(app.getHttpServer())
           .post(
-            `/workspace/${testData.workspace.slug}/events/${context.parentEvent.id}/attend`,
+            `/workspaces/${testData.workspace.slug}/events/${context.parentEvent.id}/attend`,
           )
           .set('Authorization', `Bearer ${context.studentAJwt}`)
           .send({
@@ -482,7 +482,7 @@ describe('Flow: Recurring Event Series Management', () => {
         // Verify through API
         const response = await request(app.getHttpServer())
           .get(
-            `/workspace/${testData.workspace.slug}/events/${context.specificOccurrence.id}`,
+            `/workspaces/${testData.workspace.slug}/events/${context.specificOccurrence.id}`,
           )
           .set('Authorization', `Bearer ${context.studentBJwt}`)
           .expect(200);
@@ -500,7 +500,7 @@ describe('Flow: Recurring Event Series Management', () => {
         // Check capacity for a non-cancelled event
         const response = await request(app.getHttpServer())
           .get(
-            `/workspace/${testData.workspace.slug}/events/${context.childEvents[0].id}`,
+            `/workspaces/${testData.workspace.slug}/events/${context.childEvents[0].id}`,
           )
           .set('Authorization', `Bearer ${context.teacherJwt}`)
           .expect(200);

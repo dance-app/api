@@ -21,7 +21,6 @@ import {
 import {
   createWorkspaceWithNoOwnerTest,
   signInTest,
-  verifyEmailTest,
   createWorkspaceSeatTest,
   sendWorkspaceInviteTest,
   signUpTest,
@@ -266,7 +265,7 @@ describe('Onboarding a new school owner', () => {
           app,
           prismaTesting.client,
           testState.userJwt!,
-          testState.workspace.id,
+          testState.workspace.slug,
           {
             name: updatedName,
             slug: testState.workspace.slug, // Keep same slug

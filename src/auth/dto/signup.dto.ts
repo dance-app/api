@@ -52,4 +52,3 @@ export class SignUpDto {
   @IsOptional()
   provider?: AccountProvider;
 }
-

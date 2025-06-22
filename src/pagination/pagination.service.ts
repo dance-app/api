@@ -1,11 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import {
-  PaginatedResponseDto,
-  PaginationDto,
-  PaginationOptions,
-  PaginationQuery,
-} from './dto';
+import { PaginatedResponseDto, PaginationDto, PaginationOptions } from './dto';
 import { DEFAULT_PAGE_SIZE } from './pagination.constant';
 
 @Injectable()

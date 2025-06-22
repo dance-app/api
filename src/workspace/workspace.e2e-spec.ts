@@ -55,7 +55,10 @@ describe.skip('Workspace CRUD', () => {
       });
   });
 
-  it('read workspace by id', () => {
-    return request(app.getHttpServer()).get('/workspaces/1').send().expect(200);
+  it('read workspace by slug', () => {
+    return request(app.getHttpServer())
+      .get('/workspaces/test-workspace')
+      .send()
+      .expect(200);
   });
 });

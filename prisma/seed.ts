@@ -6,6 +6,9 @@ import {
   WorkspaceRole,
   DanceRole,
   AttendanceType,
+  DanceTypeEnum,
+  DanceCategory,
+  MaterialVisibility,
 } from '@prisma/client';
 import * as argon2 from 'argon2';
 
@@ -63,6 +66,242 @@ async function main() {
   });
 
   // ------------------------------------------------------------------
+  // System User and Public Materials
+  // ------------------------------------------------------------------
+  const systemUser = await createUser({
+    firstName: MOCK_USER.SYSTEM.firstName,
+    lastName: MOCK_USER.SYSTEM.lastName,
+    email: MOCK_USER.SYSTEM.email,
+    password: MOCK_USER.SYSTEM.password,
+    isSuperAdmin: MOCK_USER.SYSTEM.isSuperAdmin,
+  });
+
+  // Create dance types first
+  const danceTypes = await prisma.danceType.createManyAndReturn({
+    data: [
+      {
+        name: 'Salsa',
+        type: DanceTypeEnum.SALSA,
+        category: DanceCategory.LATIN,
+        description: 'A lively Latin dance with Cuban origins',
+      },
+      {
+        name: 'Bachata',
+        type: DanceTypeEnum.BACHATA,
+        category: DanceCategory.LATIN,
+        description: 'A romantic Latin dance from the Dominican Republic',
+      },
+      {
+        name: 'Kizomba',
+        type: DanceTypeEnum.KIZOMBA,
+        category: DanceCategory.LATIN,
+        description: 'A sensual dance from Angola',
+      },
+      {
+        name: 'Tango',
+        type: DanceTypeEnum.TANGO,
+        category: DanceCategory.BALLROOM,
+        description: 'A passionate ballroom dance from Argentina',
+      },
+      {
+        name: 'Waltz',
+        type: DanceTypeEnum.WALTZ,
+        category: DanceCategory.BALLROOM,
+        description: 'An elegant ballroom dance in 3/4 time',
+      },
+    ],
+  });
+
+  // Find dance types by their enum type for materials
+  const salsaDanceType = danceTypes.find(
+    (dt) => dt.type === DanceTypeEnum.SALSA,
+  );
+  const bachataDanceType = danceTypes.find(
+    (dt) => dt.type === DanceTypeEnum.BACHATA,
+  );
+  const tangoDanceType = danceTypes.find(
+    (dt) => dt.type === DanceTypeEnum.TANGO,
+  );
+  const waltzDanceType = danceTypes.find(
+    (dt) => dt.type === DanceTypeEnum.WALTZ,
+  );
+
+  // Create basic public dance moves that everyone can use
+  const publicMaterials = await Promise.all([
+    // Basic Salsa moves
+    prisma.material.create({
+      data: {
+        name: 'Basic Salsa Step',
+        description:
+          'The fundamental salsa step - forward and back basic pattern with timing on 1-2-3, 5-6-7',
+        videoUrls: [],
+        imageUrls: [],
+        visibility: MaterialVisibility.PUBLIC,
+        createdById: systemUser.id,
+        danceTypeId: salsaDanceType?.id,
+      },
+    }),
+    prisma.material.create({
+      data: {
+        name: 'Salsa Cross Body Lead',
+        description:
+          'Essential salsa move where the leader guides the follower across their body',
+        videoUrls: [],
+        imageUrls: [],
+        visibility: MaterialVisibility.PUBLIC,
+        createdById: systemUser.id,
+        danceTypeId: salsaDanceType?.id,
+      },
+    }),
+    prisma.material.create({
+      data: {
+        name: 'Salsa Right Turn',
+        description:
+          'Basic right turn for followers in salsa, led from cross body lead position',
+        videoUrls: [],
+        imageUrls: [],
+        visibility: MaterialVisibility.PUBLIC,
+        createdById: systemUser.id,
+        danceTypeId: salsaDanceType?.id,
+      },
+    }),
+
+    // Basic Bachata moves
+    prisma.material.create({
+      data: {
+        name: 'Basic Bachata Step',
+        description:
+          'The fundamental bachata step - side to side with hip movement and tap on 4 and 8',
+        videoUrls: [],
+        imageUrls: [],
+        visibility: MaterialVisibility.PUBLIC,
+        createdById: systemUser.id,
+        danceTypeId: bachataDanceType?.id,
+      },
+    }),
+    prisma.material.create({
+      data: {
+        name: 'Bachata Side Step',
+        description:
+          'Basic side step pattern in bachata with proper hip motion',
+        videoUrls: [],
+        imageUrls: [],
+        visibility: MaterialVisibility.PUBLIC,
+        createdById: systemUser.id,
+        danceTypeId: bachataDanceType?.id,
+      },
+    }),
+
+    // Basic Tango moves
+    prisma.material.create({
+      data: {
+        name: 'Tango Walk',
+        description:
+          'The fundamental tango walk with proper posture and connection',
+        videoUrls: [],
+        imageUrls: [],
+        visibility: MaterialVisibility.PUBLIC,
+        createdById: systemUser.id,
+        danceTypeId: tangoDanceType?.id,
+      },
+    }),
+    prisma.material.create({
+      data: {
+        name: 'Tango Ocho Cortado',
+        description:
+          'Basic tango figure - interrupted eight, fundamental movement pattern',
+        videoUrls: [],
+        imageUrls: [],
+        visibility: MaterialVisibility.PUBLIC,
+        createdById: systemUser.id,
+        danceTypeId: tangoDanceType?.id,
+      },
+    }),
+
+    // Basic Waltz moves
+    prisma.material.create({
+      data: {
+        name: 'Waltz Box Step',
+        description:
+          'The fundamental waltz box step in 3/4 time - forward, side, together pattern',
+        videoUrls: [],
+        imageUrls: [],
+        visibility: MaterialVisibility.PUBLIC,
+        createdById: systemUser.id,
+        danceTypeId: waltzDanceType?.id,
+      },
+    }),
+    prisma.material.create({
+      data: {
+        name: 'Waltz Natural Turn',
+        description:
+          'Basic waltz natural turn (right turn) with proper rise and fall',
+        videoUrls: [],
+        imageUrls: [],
+        visibility: MaterialVisibility.PUBLIC,
+        createdById: systemUser.id,
+        danceTypeId: waltzDanceType?.id,
+      },
+    }),
+
+    // General technique materials
+    prisma.material.create({
+      data: {
+        name: 'Dance Frame and Posture',
+        description:
+          'Fundamental dance posture and frame for partner dancing - applies to all dance styles',
+        videoUrls: [],
+        imageUrls: [],
+        visibility: MaterialVisibility.PUBLIC,
+        createdById: systemUser.id,
+      },
+    }),
+    prisma.material.create({
+      data: {
+        name: 'Basic Rhythm and Timing',
+        description:
+          'Understanding musical timing and how to count beats in different dance styles',
+        videoUrls: [],
+        imageUrls: [],
+        visibility: MaterialVisibility.PUBLIC,
+        createdById: systemUser.id,
+      },
+    }),
+    prisma.material.create({
+      data: {
+        name: 'Leading and Following Basics',
+        description:
+          'Fundamental concepts of leading and following in partner dancing',
+        videoUrls: [],
+        imageUrls: [],
+        visibility: MaterialVisibility.PUBLIC,
+        createdById: systemUser.id,
+      },
+    }),
+  ]);
+
+  // Create a composite material - Basic Salsa Combo
+  await prisma.material.create({
+    data: {
+      name: 'Basic Salsa Combo',
+      description:
+        'A simple salsa combination using basic step, cross body lead, and right turn',
+      videoUrls: [],
+      imageUrls: [],
+      visibility: MaterialVisibility.PUBLIC,
+      createdById: systemUser.id,
+      danceTypeId: salsaDanceType?.id,
+      childMaterials: {
+        connect: [
+          { id: publicMaterials[0].id }, // Basic Salsa Step
+          { id: publicMaterials[1].id }, // Salsa Cross Body Lead
+          { id: publicMaterials[2].id }, // Salsa Right Turn
+        ],
+      },
+    },
+  });
+
+  // ------------------------------------------------------------------
   // Workspace A setup
   // ------------------------------------------------------------------
   const ownerA = await createUser({
@@ -87,6 +326,16 @@ async function main() {
             },
           ],
         },
+      },
+    },
+  });
+
+  // Connect dance types to workspace A's configuration
+  await prisma.workspaceConfig.update({
+    where: { workspaceId: workspaceA.id },
+    data: {
+      danceTypes: {
+        connect: danceTypes.map((dt) => ({ id: dt.id })),
       },
     },
   });
@@ -188,7 +437,14 @@ async function main() {
     })),
   });
 
-  console.info('Seed finished with 2 workspaces, 7 users 🌱');
+  const totalWorkspaces = await prisma.workspace.count();
+  const totalUsers = await prisma.user.count();
+  const totalMaterials = await prisma.material.count();
+  const totalDanceTypes = await prisma.danceType.count();
+
+  console.info(
+    `Seed finished with ${totalWorkspaces} workspaces, ${totalUsers} users, ${totalMaterials} materials, ${totalDanceTypes} dance types 🌱`,
+  );
 }
 
 main()

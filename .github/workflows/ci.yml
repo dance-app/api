@@ -2,6 +2,7 @@ name: Pull request check 👀
 run-name: ${{ github.actor }} wants to merge
 
 on:
+  push:
   pull_request:
     branches:
       - main
@@ -27,5 +28,11 @@ jobs:
       - name: Install packages 📦
         run: pnpm install
 
+      - name: Generate Prisma client 🔄
+        run: pnpm run db:dev:generate
+
       - name: Check lint & formatting 👀
-        run: pnpm run lint && pnpm run format
+        run: pnpm run lint:check && pnpm run format:check
+
+      - name: Check types 🔍
+        run: pnpm run typescript

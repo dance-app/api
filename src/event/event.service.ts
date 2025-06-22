@@ -40,7 +40,6 @@ import {
 
 import { AuthService } from '@/auth/auth.service';
 import { DatabaseService } from '@/database/database.service';
-import { MemberResponseDto } from '@/member/dto/member-response.dto';
 import { MemberService } from '@/member/member.service';
 import { PaginationDto, PaginatedResponseDto } from '@/pagination/dto';
 import { PaginationService } from '@/pagination/pagination.service';

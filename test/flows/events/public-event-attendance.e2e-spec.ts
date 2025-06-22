@@ -114,7 +114,7 @@ describe('Flow: Public Event Open Registration', () => {
       name: 'Teacher creates a public salsa class event',
       test: async () => {
         const response = await request(app.getHttpServer())
-          .post(`/workspace/${testData.workspace.slug}/events`)
+          .post(`/workspaces/${testData.workspace.slug}/events`)
           .set('Authorization', `Bearer ${context.teacherJwt}`)
           .send(testData.eventData)
           .expect(201);
@@ -139,7 +139,7 @@ describe('Flow: Public Event Open Registration', () => {
         // No authentication header
         const response = await request(app.getHttpServer())
           .get(
-            `/workspace/${testData.workspace.slug}/events/${context.event.id}`,
+            `/workspaces/${testData.workspace.slug}/events/${context.event.id}`,
           )
           .expect(200);
 
@@ -158,9 +158,10 @@ describe('Flow: Public Event Open Registration', () => {
     {
       name: 'Anonymous user registers as a guest with email and name',
       test: async () => {
+        // TODO: this should not be possible actualy
         const response = await request(app.getHttpServer())
           .post(
-            `/workspace/${testData.workspace.slug}/events/${context.event.id}/attend`,
+            `/workspaces/${testData.workspace.slug}/events/${context.event.id}/attend`,
           )
           .send({
             action: AttendanceAction.REGISTERED,
@@ -211,7 +212,7 @@ describe('Flow: Public Event Open Registration', () => {
         // Register for event with role preference
         const response = await request(app.getHttpServer())
           .post(
-            `/workspace/${testData.workspace.slug}/events/${context.event.id}/attend`,
+            `/workspaces/${testData.workspace.slug}/events/${context.event.id}/attend`,
           )
           .set('Authorization', `Bearer ${context.registeredUserJwt}`)
           .send({
@@ -249,7 +250,7 @@ describe('Flow: Public Event Open Registration', () => {
       test: async () => {
         const response = await request(app.getHttpServer())
           .get(
-            `/workspace/${testData.workspace.slug}/events/${context.event.id}`,
+            `/workspaces/${testData.workspace.slug}/events/${context.event.id}`,
           )
           .expect(200);
 
@@ -266,7 +267,7 @@ describe('Flow: Public Event Open Registration', () => {
         // Guest cancels without authentication
         await request(app.getHttpServer())
           .post(
-            `/workspace/${testData.workspace.slug}/events/${context.event.id}/attend`,
+            `/workspaces/${testData.workspace.slug}/events/${context.event.id}/attend`,
           )
           .send({
             action: AttendanceAction.CANCELLED,
@@ -295,7 +296,7 @@ describe('Flow: Public Event Open Registration', () => {
       test: async () => {
         const response = await request(app.getHttpServer())
           .get(
-            `/workspace/${testData.workspace.slug}/events/${context.event.id}`,
+            `/workspaces/${testData.workspace.slug}/events/${context.event.id}`,
           )
           .expect(200);
 

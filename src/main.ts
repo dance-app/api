@@ -14,6 +14,9 @@ async function bootstrap() {
   app.useGlobalFilters(new PrismaExceptionFilter());
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
   app.enableCors();
-  await app.listen(3333);
+  const port = process.env.PORT || 3333;
+  await app.listen(port);
+  console.log(`🚀 Application is running on: http://localhost:${port}`);
+  console.log(`📖 Swagger docs available at: http://localhost:${port}/docs`);
 }
 bootstrap();
