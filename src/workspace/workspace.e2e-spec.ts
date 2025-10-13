@@ -31,6 +31,7 @@ describe.skip('Workspace CRUD', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     createdById: 0,
+    deletedAt: null,
   };
 
   it('create 201', () => {
