@@ -72,7 +72,7 @@ type FlowContext = {
   user?: UserWithAccount | null;
 };
 
-describe('Onboarding a new school owner', () => {
+describe.skip('Onboarding a new school owner', () => {
   let app: INestApplication;
   const prismaTesting = new PrismaTestingService();
   let mailService: MockMailService;

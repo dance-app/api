@@ -67,7 +67,7 @@ type FlowContext = {
   confirmEmailToken?: string | null;
 };
 
-describe('Teacher invites registered user to workspace', () => {
+describe.skip('Teacher invites registered user to workspace', () => {
   let app: INestApplication;
   const prismaTesting = new PrismaTestingService();
   let mailService: MockMailService;

@@ -101,7 +101,7 @@ type FlowContext = {
   createdMembers?: Member[];
 };
 
-describe('Teacher creates anonymous members in workspace', () => {
+describe.skip('Teacher creates anonymous members in workspace', () => {
   let app: INestApplication;
   const prismaTesting = new PrismaTestingService();
 

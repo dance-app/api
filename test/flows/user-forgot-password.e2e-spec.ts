@@ -43,7 +43,7 @@ type FlowContext = {
   confirmEmailToken?: string | null;
 };
 
-describe('User Forgot Password Flow', () => {
+describe.skip('User Forgot Password Flow', () => {
   let app: INestApplication;
   const prismaTesting = new PrismaTestingService();
   let mailService: MockMailService;

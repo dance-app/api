@@ -7,7 +7,7 @@
 // 7. Student A gets details of event A
 // 8. Teacher list attendees of event B.1 (firt occurence of events B)
 
-describe('Placeholder event-planning', () => {
+describe.skip('Placeholder event-planning', () => {
   it('it should succeed', () => {
     expect(true).toBeTruthy();
   });

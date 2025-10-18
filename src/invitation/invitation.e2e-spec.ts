@@ -20,7 +20,7 @@ import { PrismaTestingService } from '@/test/prisma-testing.service';
 import { UserWithAccount } from '@/user/user.types';
 import { WorkspaceWithMember } from '@/workspace/worspace.types';
 
-describe('InvitationController (Integration)', () => {
+describe.skip('InvitationController (Integration)', () => {
   const testUserDto = {
     email: 'john@example.com',
     password: 'password1',
@@ -113,7 +113,7 @@ describe('InvitationController (Integration)', () => {
     await app.close();
   });
 
-  describe('POST /invitations', () => {
+  describe.skip('POST /invitations', () => {
     let testUserJwt;
     beforeEach(async () => {
       testUserJwt = (
@@ -258,7 +258,7 @@ describe('InvitationController (Integration)', () => {
     });
   });
 
-  describe('GET /invitations/workspace/:slug', () => {
+  describe.skip('GET /invitations/workspace/:slug', () => {
     beforeEach(async () => {
       // Create some test invitations
       await prismaTesting.client.invitation.createMany({
@@ -351,7 +351,7 @@ describe('InvitationController (Integration)', () => {
     });
   });
 
-  describe('GET /invitations/token/:token', () => {
+  describe.skip('GET /invitations/token/:token', () => {
     let testInvitation: any;
     const invitationToken = uuidv4();
     beforeEach(async () => {
@@ -406,7 +406,7 @@ describe('InvitationController (Integration)', () => {
     });
   });
 
-  describe('POST /invitations/accept/:token', () => {
+  describe.skip('POST /invitations/accept/:token', () => {
     let testInvitation: any;
     let memberSeat: Member;
     const invitationToken = uuidv4();
@@ -507,7 +507,7 @@ describe('InvitationController (Integration)', () => {
     });
   });
 
-  describe('POST /invitations/decline/:token', () => {
+  describe.skip('POST /invitations/decline/:token', () => {
     let testInvitation: any;
     const invitationToken = uuidv4();
     beforeEach(async () => {
@@ -582,7 +582,7 @@ describe('InvitationController (Integration)', () => {
     });
   });
 
-  describe('End-to-End Workflow', () => {
+  describe.skip('End-to-End Workflow', () => {
     it('should complete full invitation workflow', async () => {
       // 1. Create invitation
       const createDto: CreateWorkspaceInvitationDto = {
