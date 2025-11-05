@@ -8,7 +8,7 @@ export class WorkspaceConfigDto {
 export class WorkspaceResponseDto {
   id: number;
   name: string;
-  slug: string;
+  slug: string | null;
   createdAt: Date;
   updatedAt: Date;
   configuration: WorkspaceConfigDto;

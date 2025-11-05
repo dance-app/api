@@ -30,6 +30,7 @@ import {
   updateWorkspaceTest,
   getWorkspaceDetailsTest,
   getUserWorkspacesTest,
+  deleteWorkspaceTest,
 } from './common-tests';
 import { setupTestSteps } from './run-flow';
 import { AppModule } from '../../src/app.module';
@@ -281,6 +282,18 @@ describe.skip('Onboarding a new school owner', () => {
         );
         // Update test state for consistency
         testState.workspace.name = updatedName;
+      },
+    },
+    {
+      name: 'User deletes the workspace and slug is cleared',
+      test: async () => {
+        await deleteWorkspaceTest(
+          app,
+          prismaTesting.client,
+          testState.userJwt!,
+          testState.workspace.slug,
+        );
+        testState.workspace = null;
       },
     },
   ];

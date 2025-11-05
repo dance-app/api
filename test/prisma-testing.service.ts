@@ -9,7 +9,14 @@ import * as argon2 from 'argon2';
 import { DanceLevel } from '@/member/enums/dance-level.enum';
 
 export class PrismaTestingService {
-  client = new PrismaClient();
+  client: PrismaClient;
+  private readonly shouldDisconnect: boolean;
+
+  constructor(client?: PrismaClient) {
+    this.client = client ?? new PrismaClient();
+    this.shouldDisconnect = !client;
+  }
+
   async reset() {
     return await this.client.$transaction([
       this.client.materialStudentShare.deleteMany(),
@@ -32,7 +39,9 @@ export class PrismaTestingService {
 
   async close() {
     await this.reset();
-    await this.client.$disconnect();
+    if (this.shouldDisconnect) {
+      await this.client.$disconnect();
+    }
   }
 
   async createWorkspace(

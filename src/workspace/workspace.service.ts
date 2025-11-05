@@ -208,6 +208,7 @@ export class WorkspaceService {
       where: { id },
       data: {
         deletedAt: new Date(),
+        slug: null,
       },
     });
 
@@ -252,11 +253,12 @@ export class WorkspaceService {
     const workspace = await this.database.workspace.findFirst({
       where: {
         slug,
-        deletedAt: null,
       },
     });
 
-    if (!workspace) return false;
+    // If workspace doesn't exist or is deleted, let the request pass through
+    // The controller will return 404 Not Found
+    if (!workspace || workspace.deletedAt) return true;
 
     if (user.isSuperAdmin) return true;
 

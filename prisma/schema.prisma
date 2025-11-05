@@ -111,7 +111,7 @@ model Workspace {
   createdBy User @relation(fields: [createdById], references: [id])
 
   name String
-  slug String @unique
+  slug String? @unique
 
   configuration WorkspaceConfig?
   members Member[]

@@ -11,6 +11,7 @@ const config: Config.InitialOptions = {
   setupFiles: ['<rootDir>/test/setup-env.ts'],
   moduleFileExtensions: ['js', 'ts', 'json'],
   testMatch: ['<rootDir>/**/*.e2e-spec.ts'],
+  maxWorkers: 1, // Run tests sequentially to avoid database conflicts
   transform: {
     '^.+\\.(t|j)s$': [
       'ts-jest',

@@ -505,7 +505,7 @@ export async function getWorkspaceDetailsTest(
   },
 ) {
   const response = await request(app.getHttpServer())
-    .get(`/workspaces/slug/${workspaceSlug}`)
+    .get(`/workspaces/${workspaceSlug}`)
     .set('Authorization', `Bearer ${userJwt}`)
     .expect(200);
 
@@ -538,8 +538,14 @@ export async function updateWorkspaceTest(
     slug: string;
   },
 ) {
+  const workspaceBeforeUpdate = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+  });
+
+  expect(workspaceBeforeUpdate).toBeTruthy();
+
   const response = await request(app.getHttpServer())
-    .patch(`/workspaces/${workspaceId}`)
+    .patch(`/workspaces/${workspaceBeforeUpdate.slug}`)
     .set('Authorization', `Bearer ${userJwt}`)
     .send(updateData)
     .expect(200);
@@ -563,6 +569,39 @@ export async function updateWorkspaceTest(
   expect(dbWorkspace).toBeTruthy();
   expect(dbWorkspace.name).toBe(updateData.name);
   expect(dbWorkspace.slug).toBe(updateData.slug);
+
+  return response.body;
+}
+
+export async function deleteWorkspaceTest(
+  app: INestApplication,
+  prisma: PrismaClient,
+  userJwt: string,
+  workspaceSlug: string,
+) {
+  const response = await request(app.getHttpServer())
+    .delete(`/workspaces/${workspaceSlug}`)
+    .set('Authorization', `Bearer ${userJwt}`)
+    .expect(200);
+
+  expect(response.body).toEqual(
+    expect.objectContaining({
+      message: 'Workspace deleted',
+      data: expect.objectContaining({
+        id: expect.any(Number),
+        slug: null,
+        deletedAt: expect.any(String),
+      }),
+    }),
+  );
+
+  const dbWorkspace = await prisma.workspace.findUnique({
+    where: { id: response.body.data.id },
+  });
+
+  expect(dbWorkspace).toBeTruthy();
+  expect(dbWorkspace?.slug).toBeNull();
+  expect(dbWorkspace?.deletedAt).toBeInstanceOf(Date);
 
   return response.body;
 }

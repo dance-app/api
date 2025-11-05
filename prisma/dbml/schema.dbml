@@ -70,7 +70,7 @@ Table workspaces {
   createdById Int [not null]
   createdBy users [not null]
   name String [not null]
-  slug String [unique, not null]
+  slug String [unique]
   configuration workspaceConfig
   members members [not null]
   events events [not null]
