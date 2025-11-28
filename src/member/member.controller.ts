@@ -6,7 +6,6 @@ import {
   Body,
   Param,
   Query,
-  ParseIntPipe,
   Delete,
   HttpCode,
   HttpStatus,
@@ -73,13 +72,13 @@ export class MemberController {
 
   @Get(':id')
   @RequireWorkspaceRoles(WorkspaceRole.OWNER, WorkspaceRole.TEACHER)
-  async readById(@Param('id') id: number) {
+  async readById(@Param('id') id: string) {
     return await this.memberService.getMember(id);
   }
 
   // @Patch(':id')
   // updateUser(@Param('id') id: string, @Body() data: UserDto) {
-  //   return this.memberService.update(Number(id), data);
+  //   return this.memberService.update(id, data);
   // }
 
   @Delete(':memberId')
@@ -88,7 +87,7 @@ export class MemberController {
   async removeMember(
     @WorkspaceBySlug() workspace: Workspace,
     @GetAuthUser() user: UserWithAccount,
-    @Param('memberId', ParseIntPipe) memberId: number,
+    @Param('memberId') memberId: string,
   ): Promise<void> {
     // TODO: add interceptors
     const memberToDelete = await this.memberService.getMember(memberId);

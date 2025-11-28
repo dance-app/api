@@ -4,7 +4,7 @@ import { IsEnum } from 'class-validator';
 
 export class SafeAccountDto {
   @ApiProperty({ description: 'Account ID' })
-  id: number;
+  id: string;
 
   @ApiProperty({ description: 'Account provider', enum: AccountProvider })
   @IsEnum(AccountProvider)

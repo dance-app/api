@@ -6,6 +6,8 @@ import {
 } from '@prisma/client';
 import * as argon2 from 'argon2';
 
+import { generateId, ID_PREFIXES } from '../src/lib/id-generator';
+
 import { DanceLevel } from '@/member/enums/dance-level.enum';
 
 export class PrismaTestingService {
@@ -47,12 +49,13 @@ export class PrismaTestingService {
   async createWorkspace(
     name: string,
     slug: string,
-    createdByUserId: number,
+    createdByUserId: string,
     linkUsers: User[],
     userRoles: WorkspaceRole[],
   ) {
     const members = linkUsers.map((u, i) => {
       return {
+        id: generateId(ID_PREFIXES.MEMBER),
         createdById: createdByUserId,
         userId: u.id,
         name: u.firstName,
@@ -63,11 +66,13 @@ export class PrismaTestingService {
     });
     return await this.client.workspace.create({
       data: {
+        id: generateId(ID_PREFIXES.WORKSPACE),
         name,
         slug,
         createdById: createdByUserId,
         configuration: {
           create: {
+            id: generateId(ID_PREFIXES.WORKSPACE_CONFIG),
             weekStart: 'MONDAY',
           },
         },
@@ -83,14 +88,15 @@ export class PrismaTestingService {
   }
 
   async createMemberSeat(
-    createdById: number,
-    workspaceId: number,
+    createdById: string,
+    workspaceId: string,
     roles: WorkspaceRole[],
     name: string | undefined = undefined,
     level: DanceLevel | undefined = undefined,
   ) {
     return await this.client.member.create({
       data: {
+        id: generateId(ID_PREFIXES.MEMBER),
         createdBy: {
           connect: {
             id: createdById,
@@ -119,11 +125,13 @@ export class PrismaTestingService {
     const hashedPass = await argon2.hash(password);
     const user = await this.client.user.create({
       data: {
+        id: generateId(ID_PREFIXES.USER),
         firstName,
         lastName,
         isSuperAdmin: superAdmin,
         accounts: {
           create: {
+            id: generateId(ID_PREFIXES.ACCOUNT),
             provider: AccountProvider.LOCAL,
             email,
             password: hashedPass,

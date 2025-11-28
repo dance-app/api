@@ -97,7 +97,7 @@ export class UserService {
     return newUser;
   }*/
 
-  async update(id: number, data: UpdateUserDto) {
+  async update(id: string, data: UpdateUserDto) {
     const updatedUser = await this.database.user.update({
       where: { id },
       data: {
@@ -145,7 +145,7 @@ export class UserService {
     return account?.user;
   }
 
-  async delete(id: number) {
+  async delete(id: string) {
     const deletedUser = await this.database.user.delete({
       where: { id },
     });

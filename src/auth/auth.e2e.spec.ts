@@ -10,6 +10,8 @@ import { AuthModule } from './auth.module';
 import { SignInResponseDto } from './dto';
 
 import { DatabaseModule } from '@/database/database.module';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants';
+import { ID_PREFIXES } from '@/lib/id-generator';
 import { MailService } from '@/mail/mail.service';
 import { PaginationModule } from '@/pagination/pagination.module';
 /*import {
@@ -17,6 +19,7 @@ import { PaginationModule } from '@/pagination/pagination.module';
   expectUserShapeWithoutToken,
   expectUserShapeWithToken,
 } from '@/test/assertions';*/ // TODO
+import { expectSafeUserWithAccountShape } from '@/test/assertions';
 import { MockMailService } from '@/test/mock-mail.service';
 import { PrismaTestingService } from '@/test/prisma-testing.service';
 
@@ -74,9 +77,25 @@ describe('Auth flow', () => {
         .send(dto)
         .expect(201)
         .expect((res) => {
-          // TODO: write equivalent of expectUserShapeWithoutToken
-          expect(res.body.accessToken).toBeDefined();
-          expect(res.body.refreshToken).toBeDefined();
+          // Test the user payload
+          expect(res.body.data.user).toBeDefined();
+          expect(res.body.data.user.id.startsWith(ID_PREFIXES.USER)).toBe(true);
+          expect(res.body.data.user.firstName).toBe(dto.firstName);
+          expect(res.body.data.user.lastName).toBe(dto.lastName);
+          expect(res.body.data.user.isSuperAdmin).toBe(false);
+          // Test the user account payload
+          expect(res.body.data.user.accounts).toBeDefined();
+          expect(res.body.data.user.accounts).toHaveLength(1);
+          expect(
+            res.body.data.user.accounts[0].id.startsWith(ID_PREFIXES.ACCOUNT),
+          ).toBe(true);
+          expect(res.body.data.user.accounts[0].email).toBe(dto.email);
+          expect(res.body.data.user.accounts[0].isEmailVerified).toBe(false);
+          expect(res.body.data.user.accounts[0].provider).toBe('LOCAL');
+          // Test tokens
+          expect(res.body.data.accessToken).toBeDefined();
+          expect(res.body.data.refreshToken).toBeDefined();
+          // Test emails
           expect(mailService.sentMails.length).toBe(1);
           expect(mailService.sentMails[0].to).toBe(dto.email);
           expect(mailService.sentMails[0].subject).toContain(
@@ -98,7 +117,9 @@ describe('Auth flow', () => {
         .send(dto)
         .expect(409)
         .expect((res) => {
-          expect(res.body.message).toContain('Email already in use');
+          expect(res.body.message).toContain(
+            ERROR_MESSAGES.EMAIL_ALREADY_EXISTS,
+          );
         });
     });
 
@@ -120,7 +141,7 @@ describe('Auth flow', () => {
         .send(weakPasswordUser)
         .expect(400)
         .expect((res) => {
-          expect(res.body.message[0]).toContain('password');
+          expect(res.body.message[0]).toBe(ERROR_MESSAGES.MIN_8_CHARACTERS);
         });
     });
   });
@@ -146,8 +167,24 @@ describe('Auth flow', () => {
         })
         .expect(200)
         .expect((res) => {
-          expect(res.body.accessToken).toBeDefined();
-          expect(res.body.refreshToken).toBeDefined();
+          expect(res.body.data.user).toBeDefined();
+          expect(res.body.data.user.id.startsWith(ID_PREFIXES.USER)).toBe(true);
+          expect(res.body.data.user.firstName).toBe(dto.firstName);
+          expect(res.body.data.user.lastName).toBe(dto.lastName);
+          expect(res.body.data.user.createdAt).toBeDefined();
+          expect(res.body.data.user.isSuperAdmin).toBe(false);
+          expect(res.body.data.user.accounts).toBeDefined();
+          expect(res.body.data.user.accounts).toHaveLength(1);
+          expect(
+            res.body.data.user.accounts[0].id.startsWith(ID_PREFIXES.ACCOUNT),
+          ).toBe(true);
+          expect(res.body.data.user.accounts[0].provider).toBe('LOCAL');
+          expect(res.body.data.user.accounts[0].email).toBe(dto.email);
+          expect(res.body.data.user.accounts[0].isEmailVerified).toBe(true);
+          expect(res.body.data.user.accounts[0].createdAt).toBeDefined();
+
+          expect(res.body.data.accessToken).toBeDefined();
+          expect(res.body.data.refreshToken).toBeDefined();
         });
     });
 
@@ -158,7 +195,12 @@ describe('Auth flow', () => {
           email: dto.email,
           password: 'wrongpassword',
         })
-        .expect(401);
+        .expect(401)
+        .expect((res) => {
+          expect(res.body.message).toBe(ERROR_MESSAGES.INVALID_CREDENTIALS);
+          expect(res.body.error).toBe('Unauthorized');
+          expect(res.body.statusCode).toBe(401);
+        });
     });
 
     it('should return 401 if email is not verified', async () => {
@@ -183,7 +225,7 @@ describe('Auth flow', () => {
         })
         .expect(401)
         .expect((res) => {
-          expect(res.body.message).toContain('Email not verified');
+          expect(res.body.message).toContain(ERROR_MESSAGES.EMAIL_NOT_VERIFIED);
         });
     });
   });
@@ -209,7 +251,7 @@ describe('Auth flow', () => {
           password: dto.password,
         });
 
-      refreshToken = response.body.refreshToken;
+      refreshToken = response.body.data.refreshToken;
     });
 
     it('should issue a new access token with valid refresh token', async () => {
@@ -218,7 +260,7 @@ describe('Auth flow', () => {
         .send({ refreshToken })
         .expect(200)
         .expect((res) => {
-          expect(res.body.accessToken).toBeDefined();
+          expect(res.body.data.accessToken).toBeDefined();
         });
     });
 
@@ -226,7 +268,12 @@ describe('Auth flow', () => {
       return await request(app.getHttpServer())
         .post('/auth/refresh-token')
         .send({ refreshToken: 'invalid-token' })
-        .expect(401);
+        .expect(401)
+        .expect((res) => {
+          expect(res.body.message).toContain(
+            ERROR_MESSAGES.INVALID_REFRESH_TOKEN,
+          );
+        });
     });
   });
 
@@ -248,8 +295,9 @@ describe('Auth flow', () => {
         .send({ email: dto.email })
         .expect(200)
         .expect((res) => {
-          expect(res.body.message).toContain(
-            'If an account with that email exists',
+          // expect(res.body.success).toBe(true);
+          expect(res.body.data.message).toBe(
+            SUCCESS_MESSAGES.PASSWORD_RESET_EMAIL_SENT,
           );
           expect(mailService.sentMails.length).toBe(1);
           expect(mailService.sentMails[0].to).toBe(dto.email);
@@ -265,8 +313,8 @@ describe('Auth flow', () => {
         .send({ email: 'nonexistent@example.com' })
         .expect(200)
         .expect((res) => {
-          expect(res.body.message).toContain(
-            'If an account with that email exists',
+          expect(res.body.data.message).toBe(
+            SUCCESS_MESSAGES.PASSWORD_RESET_EMAIL_SENT,
           );
           expect(mailService.sentMails.length).toBe(0); // No email sent for non-existent account
         });
@@ -304,8 +352,8 @@ describe('Auth flow', () => {
         })
         .expect(200)
         .expect((res) => {
-          expect(res.body.message).toContain(
-            'Password has been reset successfully',
+          expect(res.body.data.message).toBe(
+            SUCCESS_MESSAGES.PASSWORD_RESET_SUCCESS,
           );
         });
 
@@ -341,7 +389,9 @@ describe('Auth flow', () => {
         })
         .expect(404)
         .expect((res) => {
-          expect(res.body.message).toContain('Invalid or expired token');
+          expect(res.body.message).toContain(
+            ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN,
+          );
         });
     });
 
@@ -357,7 +407,9 @@ describe('Auth flow', () => {
         })
         .expect(401)
         .expect((res) => {
-          expect(res.body.message).toContain('Invalid or expired token');
+          expect(res.body.message).toContain(
+            ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN,
+          );
         });
     });
   });
@@ -385,7 +437,9 @@ describe('Auth flow', () => {
         .send({ token: verificationToken })
         .expect(200)
         .expect((res) => {
-          expect(res.body.message).toContain('Email verified successfully');
+          expect(res.body.data.message).toBe(
+            SUCCESS_MESSAGES.EMAIL_VERIFIED_SUCCESS,
+          );
         });
 
       // Try to sign in (should work after email verification)
@@ -414,7 +468,9 @@ describe('Auth flow', () => {
         .send({ token: uuid() })
         .expect(400)
         .expect((res) => {
-          expect(res.body.message).toContain('Invalid or expired token');
+          expect(res.body.message).toContain(
+            ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN,
+          );
         });
     });
 
@@ -427,7 +483,9 @@ describe('Auth flow', () => {
         .send({ token: verificationToken })
         .expect(400)
         .expect((res) => {
-          expect(res.body.message).toContain('Invalid or expired token');
+          expect(res.body.message).toContain(
+            ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN,
+          );
         });
     });
   });
@@ -453,33 +511,26 @@ describe('Auth flow', () => {
           password: dto.password,
         });
 
-      accessToken = response.body.accessToken;
+      accessToken = response.body.data.accessToken;
     });
 
-    it('should return user profile with valid token', () => {
+    it('should return user profile when token is valid', () => {
       return request(app.getHttpServer())
         .get('/auth/me')
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200)
         .expect((res) => {
-          expect(res.body.id).toBeDefined(); // TODO: in assertions.ts
-          /*expect(res.body.accounts).toEqual(
-            expect.arrayContaining({
-              email: expect.any(Array),
-            }),
-          )(dto.email);*/
-          expect(res.body.firstName).toBe(dto.firstName);
-          expect(res.body.lastName).toBe(dto.lastName);
+          expectSafeUserWithAccountShape(res.body.data, dto);
           // Should not return password
-          expect(res.body.password).toBeUndefined();
+          expect(res.body.data.password).toBeUndefined();
         });
     });
 
-    it('should return 401 without token', () => {
+    it('should return 401 when token is missing', () => {
       return request(app.getHttpServer()).get('/auth/me').expect(401);
     });
 
-    it('should return 401 with invalid token', () => {
+    it('should return 401 when token is invalid', () => {
       return request(app.getHttpServer())
         .get('/auth/me')
         .set('Authorization', 'Bearer invalid-token')
@@ -489,7 +540,7 @@ describe('Auth flow', () => {
 
   describe('PATCH /auth/change-password', () => {
     let accessToken: string;
-    let accountId: number;
+    let accountId: string;
     beforeEach(async () => {
       await prismaTesting.reset();
       mailService.reset();
@@ -498,9 +549,9 @@ describe('Auth flow', () => {
       const resp = await request(app.getHttpServer())
         .post('/auth/sign-up')
         .send(dto);
-      const signInResponse = resp.body as SignInResponseDto;
+      const signInResponse = resp.body.data as SignInResponseDto;
       const userWithAccount = signInResponse.user;
-      accountId = userWithAccount.id;
+      accountId = userWithAccount.accounts[0].id;
       // Verify email
       await prismaTesting.verifyEmail(dto.email);
 
@@ -512,7 +563,7 @@ describe('Auth flow', () => {
           password: dto.password,
         });
 
-      accessToken = response.body.accessToken;
+      accessToken = response.body.data.accessToken;
     });
 
     it('should change password with valid credentials', async () => {
@@ -527,7 +578,9 @@ describe('Auth flow', () => {
         })
         .expect(200)
         .expect((res) => {
-          expect(res.body.message).toContain('Password changed successfully');
+          expect(res.body.data.message).toBe(
+            SUCCESS_MESSAGES.PASSWORD_CHANGED_SUCCESS,
+          );
         });
 
       // Try to sign in with the new password
@@ -551,7 +604,9 @@ describe('Auth flow', () => {
         })
         .expect(401)
         .expect((res) => {
-          expect(res.body.message).toContain('Current password is incorrect');
+          expect(res.body.message).toContain(
+            ERROR_MESSAGES.CURRENT_PASSWORD_INCORRECT,
+          );
         });
     });
 
@@ -566,7 +621,7 @@ describe('Auth flow', () => {
         })
         .expect(400)
         .expect((res) => {
-          expect(res.body.message[0]).toContain('newPassword');
+          expect(res.body.message[0]).toBe(ERROR_MESSAGES.MIN_8_CHARACTERS);
         });
     });
 

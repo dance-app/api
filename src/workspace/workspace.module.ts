@@ -10,6 +10,12 @@ import { UserService } from '@/user/user.service';
 
 @Module({
   controllers: [WorkspaceController],
-  providers: [WorkspaceService, MemberService, UserService, MaterialService, PaginationService],
+  providers: [
+    WorkspaceService,
+    MemberService,
+    UserService,
+    MaterialService,
+    PaginationService,
+  ],
 })
 export class WorkspaceModule {}

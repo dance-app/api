@@ -37,7 +37,7 @@ export class UserController {
   @Get(':id')
   async getUser(
     @GetAuthUser() user: UserWithAccount,
-    @Param('id') id: number,
+    @Param('id') id: string,
   ): Promise<UserWithAccount> {
     if (user.id !== id && !user.isSuperAdmin) throw new ForbiddenException();
     // TODO: what other users can see about other users?
@@ -46,11 +46,11 @@ export class UserController {
 
   // @Patch(':id')
   // updateUser(@Param('id') id: string, @Body() data: UserDto) {
-  //   return this.userService.update(Number(id), data);
+  //   return this.userService.update(id, data);
   // }
 
   @Delete(':id')
   delete(@Param('id') id: string) {
-    return this.userService.delete(Number(id));
+    return this.userService.delete(id);
   }
 }

@@ -1,5 +1,5 @@
 export class PublicUserDto {
-  id: number;
+  id: string;
   firstName: string | null;
   lastName: string | null;
 }

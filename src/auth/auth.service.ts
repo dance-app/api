@@ -20,8 +20,10 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { SafeUserDto } from './dto/safe-user.dto';
 import { UserCreatedEvent } from './event/user-created.event';
+import { generateId, ID_PREFIXES } from '../lib/id-generator';
 
 import { DatabaseService } from '@/database/database.service';
+import { ERROR_MESSAGES } from '@/lib/constants';
 import { MailService } from '@/mail/mail.service';
 import { UserService } from '@/user/user.service';
 import { UserWithAccount } from '@/user/user.types';
@@ -114,7 +116,7 @@ export class AuthService {
 
       return { accessToken };
     } catch (error) {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException(ERROR_MESSAGES.INVALID_REFRESH_TOKEN);
     }
   }
 
@@ -122,7 +124,7 @@ export class AuthService {
     try {
       return await this.getUser(payload.uid);
     } catch (NotFoundException) {
-      throw new UnauthorizedException('Invalid token');
+      throw new UnauthorizedException(ERROR_MESSAGES.INVALID_TOKEN);
     }
   }
 
@@ -158,11 +160,14 @@ export class AuthService {
       where: { provider: provider, email: email },
     });
 
-    if (!!existingAccount) throw new ConflictException('Email already in use');
+    if (!!existingAccount)
+      throw new ConflictException(ERROR_MESSAGES.EMAIL_ALREADY_EXISTS);
 
     // If it's a LOCAL provider, password is required
     if (provider === AccountProvider.LOCAL && !password) {
-      throw new BadRequestException('Password is required for email sign up');
+      throw new BadRequestException(
+        ERROR_MESSAGES.PASSWORD_REQUIRED_FOR_EMAIL_SIGN_UP,
+      );
     }
 
     // Find if user exists with this email (through another social provider)
@@ -176,6 +181,7 @@ export class AuthService {
       user = existingUser;
       account = await this.database.account.create({
         data: {
+          id: generateId(ID_PREFIXES.ACCOUNT),
           provider,
           email,
           password:
@@ -190,11 +196,13 @@ export class AuthService {
       // Create brand new user + account
       user = await this.database.user.create({
         data: {
+          id: generateId(ID_PREFIXES.USER),
           firstName,
           lastName,
           isSuperAdmin: false, // If you want to create a super admin, write it in the db
           accounts: {
             create: {
+              id: generateId(ID_PREFIXES.ACCOUNT),
               provider,
               email,
               password:
@@ -236,11 +244,11 @@ export class AuthService {
     });
 
     if (!account) {
-      throw new NotFoundException('Account not found');
+      throw new NotFoundException(ERROR_MESSAGES.ACCOUNT_NOT_FOUND);
     }
 
     if (account.isEmailVerified) {
-      throw new BadRequestException('Email is already verified');
+      throw new BadRequestException(ERROR_MESSAGES.EMAIL_ALREADY_VERIFIED);
     }
 
     // Create email confirmation token
@@ -257,14 +265,14 @@ export class AuthService {
       this.logger.log(
         `Login attempt with no password for account ${account.id}`,
       );
-      throw new BadRequestException('Password is required for email sign in');
+      throw new BadRequestException(
+        ERROR_MESSAGES.PASSWORD_REQUIRED_FOR_EMAIL_SIGN_IN,
+      );
     }
 
     if (!account.password) {
       // TODO: We could automatically login using the social account?
-      throw new UnauthorizedException(
-        'Account exists but requires social login',
-      );
+      throw new UnauthorizedException(ERROR_MESSAGES.SOCIAL_LOGIN_REQUIRED);
     }
 
     const isPasswordValid = await this.comparePasswords(
@@ -275,7 +283,7 @@ export class AuthService {
       this.logger.log(
         `Login attempt with wrong password for account ${account.id}`,
       );
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException(ERROR_MESSAGES.INVALID_CREDENTIALS);
     }
 
     // Check if email is verified
@@ -284,7 +292,7 @@ export class AuthService {
       account.isEmailVerified === false
     ) {
       // Resend verification email
-      throw new UnauthorizedException('Email not verified.');
+      throw new UnauthorizedException(ERROR_MESSAGES.EMAIL_NOT_VERIFIED);
     }
   }
 
@@ -299,7 +307,7 @@ export class AuthService {
 
     if (!account) {
       this.logger.debug(`Credentials not correct for ${email}`);
-      throw new ForbiddenException('Credentials not correct');
+      throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN_CREDENTIALS);
     }
     this.logger.debug(`Trying signing in ${email} with provider ${provider}`);
     if (provider === AccountProvider.LOCAL) {
@@ -322,14 +330,19 @@ export class AuthService {
     return new Date(now.getTime() + hours * 60 * 60 * 1000);
   }
 
-  private async createPasswordResetToken(accountId: number): Promise<string> {
+  private async createPasswordResetToken(accountId: string): Promise<string> {
     const token = uuidv4();
     const expiresAt = this.generateExpirationDate(1); // 1 hour expiration
 
     await this.database.passwordResetToken.upsert({
       where: { accountId },
       update: { token, expiresAt },
-      create: { accountId, token, expiresAt },
+      create: {
+        id: generateId(ID_PREFIXES.PASSWORD_RESET_TOKEN),
+        accountId,
+        token,
+        expiresAt,
+      },
     });
 
     return token;
@@ -376,7 +389,7 @@ export class AuthService {
 
     if (!resetToken) {
       this.logger.log('resetPassword: Invalid reset token tried.');
-      throw new NotFoundException('Invalid or expired token');
+      throw new NotFoundException(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN);
     }
 
     // Check if token is expired
@@ -387,7 +400,7 @@ export class AuthService {
       await this.database.passwordResetToken.delete({
         where: { id: resetToken.id },
       });
-      throw new UnauthorizedException('Invalid or expired token');
+      throw new UnauthorizedException(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN);
     }
 
     // Hash new password
@@ -415,7 +428,7 @@ export class AuthService {
   //===================
 
   async changePassword(
-    userId: number,
+    userId: string,
     changePasswordDto: ChangePasswordDto,
   ): Promise<void> {
     const { accountId, currentPassword, newPassword } = changePasswordDto;
@@ -425,7 +438,7 @@ export class AuthService {
     });
 
     if (!account) {
-      throw new NotFoundException('Account not found or not a LOCAL provider');
+      throw new NotFoundException(ERROR_MESSAGES.ACCOUNT_NOT_LOCAL);
     }
 
     // Verify current password
@@ -434,7 +447,9 @@ export class AuthService {
       account.password,
     );
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Current password is incorrect');
+      throw new UnauthorizedException(
+        ERROR_MESSAGES.CURRENT_PASSWORD_INCORRECT,
+      );
     }
 
     // Hash new password
@@ -454,7 +469,7 @@ export class AuthService {
   //===================
 
   private async createEmailConfirmationToken(
-    accountId: number,
+    accountId: string,
   ): Promise<string> {
     const token = uuidv4();
     const expiresAt = this.generateExpirationDate(24); // 24 hours expiration
@@ -462,7 +477,12 @@ export class AuthService {
     await this.database.emailConfirmationToken.upsert({
       where: { accountId },
       update: { token, expiresAt },
-      create: { accountId, token, expiresAt },
+      create: {
+        id: generateId(ID_PREFIXES.EMAIL_CONFIRMATION_TOKEN),
+        accountId,
+        token,
+        expiresAt,
+      },
     });
 
     return token;
@@ -479,7 +499,7 @@ export class AuthService {
     });
 
     if (!emailToken) {
-      throw new BadRequestException('Invalid or expired token');
+      throw new BadRequestException(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN);
     }
 
     if (new Date() > emailToken.expiresAt) {
@@ -487,7 +507,7 @@ export class AuthService {
       await this.database.emailConfirmationToken.delete({
         where: { id: emailToken.id },
       });
-      throw new BadRequestException('Invalid or expired token');
+      throw new BadRequestException(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN);
     }
 
     await this.database.$transaction([
@@ -526,16 +546,16 @@ export class AuthService {
     };
   }
 
-  private async getUser(userId: number): Promise<UserWithAccount> {
+  private async getUser(userId: string): Promise<UserWithAccount> {
     const user = await this.database.user.findUnique({
       where: { id: userId },
       include: { accounts: true },
     });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
 
     return user;
   }
-  async getUserProfile(userId: number): Promise<SafeUserDto> {
+  async getUserProfile(userId: string): Promise<SafeUserDto> {
     const user = await this.getUser(userId);
 
     return this.mapToSafeUser(user, user.accounts);

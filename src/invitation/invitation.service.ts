@@ -23,6 +23,7 @@ import {
 import { ReadInvitationDto } from './dto/read-invitation.dto';
 import { InviteWithInviter } from './invitation.types';
 import { UserCreatedEvent } from '../auth/event/user-created.event';
+import { generateId, ID_PREFIXES } from '../lib/id-generator';
 
 import { DatabaseService } from '@/database/database.service';
 import { MailService } from '@/mail/mail.service';
@@ -81,8 +82,8 @@ export class InvitationService {
   }
 
   async findPendingWorkspaceInvites(
-    workspaceId: number,
-    inviteeId: number | undefined,
+    workspaceId: string,
+    inviteeId: string | undefined,
     email: string | undefined,
   ) {
     const existingInvitation = await this.database.invitation.findFirst({
@@ -179,6 +180,7 @@ export class InvitationService {
     // Create the invitation
     const invitationCreationQuery: Prisma.InvitationCreateArgs = {
       data: {
+        id: generateId(ID_PREFIXES.INVITATION),
         email,
         firstName: '',
         lastName: '', // TODO

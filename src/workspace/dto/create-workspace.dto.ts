@@ -2,7 +2,6 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { WeekStart } from '@prisma/client';
 import {
   IsEnum,
-  IsInt,
   IsOptional,
   IsString,
   Matches,
@@ -25,11 +24,11 @@ export class CreateWorkspaceDto {
   @IsOptional()
   weekStart?: WeekStart = WeekStart.MONDAY;
 
-  @IsInt()
+  @IsString()
   @IsOptional()
   @ApiPropertyOptional({
     description:
       'ID of the user who will be the owner. Should be the ID of the signed in user, unless used by SuperAdmin to create a workspace on behalf of another user, or even to create a workspace with no owner',
   })
-  ownerId?: number;
+  ownerId?: string;
 }

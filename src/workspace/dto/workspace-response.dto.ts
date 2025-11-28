@@ -1,16 +1,16 @@
 import { WeekStart } from '@prisma/client';
 
 export class WorkspaceConfigDto {
-  id: number;
+  id: string;
   weekStart: WeekStart;
 }
 
 export class WorkspaceResponseDto {
-  id: number;
+  id: string;
   name: string;
   slug: string | null;
   createdAt: Date;
   updatedAt: Date;
-  configuration: WorkspaceConfigDto;
+  configuration: WorkspaceConfigDto | null;
   membersCount?: number;
 }

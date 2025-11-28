@@ -3,7 +3,7 @@
 //// ------------------------------------------------------
 
 Table users {
-  id Int [pk, increment]
+  id String [pk]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
   firstName String
@@ -24,14 +24,14 @@ Table users {
 }
 
 Table NotificationPreferences {
-  id Int [pk, increment]
-  userId Int [unique, not null]
+  id String [pk]
+  userId String [unique, not null]
   emailNotificationsEnabled Boolean [not null, default: true]
   user users [not null]
 }
 
 Table accounts {
-  id Int [pk, increment]
+  id String [pk]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
   provider AccountProvider [not null]
@@ -39,35 +39,35 @@ Table accounts {
   password String
   isEmailVerified Boolean
   user users [not null]
-  userId Int [not null]
+  userId String [not null]
   resetToken password_reset_tokens
   emailToken email_confirmation_tokens
 }
 
 Table password_reset_tokens {
-  id Int [pk, increment]
+  id String [pk]
   createdAt DateTime [default: `now()`, not null]
   expiresAt DateTime [not null]
   token String [unique, not null]
   account accounts [not null]
-  accountId Int [unique, not null]
+  accountId String [unique, not null]
 }
 
 Table email_confirmation_tokens {
-  id Int [pk, increment]
+  id String [pk]
   createdAt DateTime [default: `now()`, not null]
   expiresAt DateTime [not null]
   token String [unique, not null]
   account accounts [not null]
-  accountId Int [unique, not null]
+  accountId String [unique, not null]
 }
 
 Table workspaces {
-  id Int [pk, increment]
+  id String [pk]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
   deletedAt DateTime
-  createdById Int [not null]
+  createdById String [not null]
   createdBy users [not null]
   name String [not null]
   slug String [unique]
@@ -79,26 +79,26 @@ Table workspaces {
 }
 
 Table workspaceConfig {
-  id Int [pk, increment]
+  id String [pk]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
   weekStart WeekStart [not null]
   workspace workspaces [not null]
-  workspaceId Int [unique, not null]
+  workspaceId String [unique, not null]
   danceTypes dance_types [not null]
 }
 
 Table members {
-  id Int [pk, increment]
+  id String [pk]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
-  createdById Int [not null]
+  createdById String [not null]
   createdBy users [not null]
   user users
-  userId Int
+  userId String
   name String
   workspace workspaces [not null]
-  workspaceId Int [not null]
+  workspaceId String [not null]
   attendances attendees [not null]
   roles WorkspaceRole[] [not null]
   level Int
@@ -107,7 +107,7 @@ Table members {
 }
 
 Table events {
-  id Int [pk, increment]
+  id String [pk]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
   name String [not null]
@@ -125,19 +125,19 @@ Table events {
   materials materials [not null]
   danceTypes dance_types [not null]
   organizer workspaces [not null]
-  organizerId Int [not null]
+  organizerId String [not null]
 }
 
 Table attendees {
-  id Int [pk, increment]
+  id String [pk]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
   role DanceRole
   type AttendanceType [not null, default: 'WAITING']
   member members [not null]
-  memberId Int [not null]
+  memberId String [not null]
   event events [not null]
-  eventId Int [not null]
+  eventId String [not null]
   invitation invitations
 
   indexes {
@@ -146,19 +146,19 @@ Table attendees {
 }
 
 Table Notification {
-  id Int [pk, increment]
+  id String [pk]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
   user users [not null]
-  userId Int [not null]
+  userId String [not null]
   type NotificationType [not null]
   read Boolean [not null, default: false]
   invitation invitations
-  invitationId Int
+  invitationId String
 }
 
 Table invitations {
-  id Int [pk, increment]
+  id String [pk]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
   type InviteType [not null]
@@ -169,22 +169,22 @@ Table invitations {
   expiresAt DateTime [not null]
   status InvitationStatus [not null, default: 'PENDING']
   workspace workspaces
-  workspaceId Int
+  workspaceId String
   inviter users [not null]
-  inviterId Int [not null]
+  inviterId String [not null]
   invitee users
-  inviteeId Int
-  memberSeatId Int [unique]
+  inviteeId String
+  memberSeatId String [unique]
   memberSeat members
   event events
-  eventId Int
-  attendeeSeatId Int [unique]
+  eventId String
+  attendeeSeatId String [unique]
   attendeeSeat attendees
   notifications Notification [not null]
 }
 
 Table dance_types {
-  id Int [pk, increment]
+  id String [pk]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
   name String [unique, not null]
@@ -197,7 +197,7 @@ Table dance_types {
 }
 
 Table materials {
-  id Int [pk, increment]
+  id String [pk]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
   deletedAt DateTime
@@ -207,27 +207,27 @@ Table materials {
   imageUrls String[] [not null]
   visibility MaterialVisibility [not null, default: 'PRIVATE']
   createdBy users [not null]
-  createdById Int [not null]
+  createdById String [not null]
   workspace workspaces
-  workspaceId Int
+  workspaceId String
   parentMaterial materials
-  parentMaterialId Int
+  parentMaterialId String
   childMaterials materials [not null]
   events events [not null]
   danceType dance_types
-  danceTypeId Int
+  danceTypeId String
   studentShares material_student_shares [not null]
 }
 
 Table material_student_shares {
-  id Int [pk, increment]
+  id String [pk]
   createdAt DateTime [default: `now()`, not null]
   material materials [not null]
-  materialId Int [not null]
+  materialId String [not null]
   student users [not null]
-  studentId Int [not null]
+  studentId String [not null]
   sharedBy users [not null]
-  sharedById Int [not null]
+  sharedById String [not null]
   viewedAt DateTime
   canDownload Boolean [not null, default: false]
   expiresAt DateTime
@@ -238,18 +238,18 @@ Table material_student_shares {
 }
 
 Table workspaceDanceTypes {
-  dancetypesId Int [ref: > dance_types.id]
-  workspaceconfigsId Int [ref: > workspaceConfig.id]
+  dancetypesId String [ref: > dance_types.id]
+  workspaceconfigsId String [ref: > workspaceConfig.id]
 }
 
 Table eventMaterials {
-  materialsId Int [ref: > materials.id]
-  eventsId Int [ref: > events.id]
+  materialsId String [ref: > materials.id]
+  eventsId String [ref: > events.id]
 }
 
 Table eventDanceTypes {
-  dancetypesId Int [ref: > dance_types.id]
-  eventsId Int [ref: > events.id]
+  dancetypesId String [ref: > dance_types.id]
+  eventsId String [ref: > events.id]
 }
 
 Enum AccountProvider {

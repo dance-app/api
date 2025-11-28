@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString, MinLength } from 'class-validator';
+import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 
-import { MOCK_USER } from '@/lib/constants';
+import { ERROR_MESSAGES, MOCK_USER } from '@/lib/constants';
 
 export class ChangePasswordDto {
   @ApiProperty({
@@ -9,15 +9,15 @@ export class ChangePasswordDto {
       'Id of the LOCAL account of the user that needs its password changed',
     example: MOCK_USER.JOHN.id,
   })
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
-  accountId: number;
+  accountId: string;
 
   @ApiProperty({
     description: 'Current password that will be changed',
     example: MOCK_USER.JOHN.password,
   })
-  @MinLength(8)
+  @MinLength(8, { message: ERROR_MESSAGES.MIN_8_CHARACTERS })
   @IsString()
   newPassword: string;
 

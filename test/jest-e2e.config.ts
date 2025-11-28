@@ -10,7 +10,7 @@ const config: Config.InitialOptions = {
   rootDir: '../',
   setupFiles: ['<rootDir>/test/setup-env.ts'],
   moduleFileExtensions: ['js', 'ts', 'json'],
-  testMatch: ['<rootDir>/**/*.e2e-spec.ts'],
+  testMatch: ['<rootDir>/**/*.e2e.spec.ts'],
   maxWorkers: 1, // Run tests sequentially to avoid database conflicts
   transform: {
     '^.+\\.(t|j)s$': [
@@ -21,7 +21,7 @@ const config: Config.InitialOptions = {
     ],
   },
   moduleNameMapper: {
-    '^@/lib/(.*)$': '<rootDir>/lib/$1',
+    '^@/lib/(.*)$': '<rootDir>/src/lib/$1',
     '^@/test/(.*)$': '<rootDir>/test/$1',
     '^@/(.*)$': '<rootDir>/src/$1',
   },

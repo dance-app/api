@@ -3,7 +3,7 @@ import { InvitationStatus, InviteType } from '@prisma/client';
 
 export class ReadInvitationDto {
   @ApiProperty({ description: 'Unique identifier for the invitation' })
-  id: number;
+  id: string;
 
   @ApiProperty({ description: 'What is the invite for' })
   type: InviteType;
@@ -40,7 +40,7 @@ export class ReadInvitationDto {
   status: InvitationStatus;
 
   @ApiProperty({ description: 'ID of the workspace' })
-  workspaceId: number;
+  workspaceId: string;
 
   @ApiProperty({ description: 'Name of the workspace' })
   workspaceName: string;
@@ -49,7 +49,7 @@ export class ReadInvitationDto {
   workspaceSlug: string;
 
   @ApiProperty({ description: 'ID of the user who sent the invitation' })
-  inviterId: number;
+  inviterId: string;
 
   @ApiProperty({ description: 'Name of the user who sent the invitation' })
   inviterName: string;
@@ -58,10 +58,10 @@ export class ReadInvitationDto {
     description:
       'ID of the user who received the invitation (if existing user)',
   })
-  inviteeId?: number;
+  inviteeId?: string;
 
   @ApiProperty({
     description: 'ID of the member seat reserved for this invitation',
   })
-  memberSeatId: number;
+  memberSeatId: string;
 }

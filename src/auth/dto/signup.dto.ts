@@ -9,7 +9,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-import { MOCK_USER } from '@/lib/constants';
+import { MOCK_USER, ERROR_MESSAGES } from '@/lib/constants';
 
 export class SignUpDto {
   @ApiProperty({
@@ -25,7 +25,7 @@ export class SignUpDto {
     example: MOCK_USER.JOHN.password,
   })
   @IsString()
-  @MinLength(8)
+  @MinLength(8, { message: ERROR_MESSAGES.MIN_8_CHARACTERS })
   @IsOptional() // Optional for OAuth
   password?: string;
 

@@ -23,11 +23,11 @@ export class CreateMaterialDto {
   visibility: MaterialVisibility;
 
   @IsOptional()
-  workspaceId?: number;
+  workspaceId?: string;
 
   @IsOptional()
-  parentMaterialId?: number;
+  parentMaterialId?: string;
 
   @IsOptional()
-  danceTypeId?: number;
+  danceTypeId?: string;
 }

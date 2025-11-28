@@ -13,6 +13,7 @@ import {
   ShareMaterialDto,
   SearchMaterialsDto,
 } from './dto';
+import { generateId, ID_PREFIXES } from '../lib/id-generator';
 
 import { DatabaseService } from '@/database/database.service';
 import { PaginatedResponseDto } from '@/pagination/dto';
@@ -28,7 +29,7 @@ export class MaterialService {
   // Create a new material
   async createMaterial(
     dto: CreateMaterialDto,
-    createdById: number,
+    createdById: string,
   ): Promise<MaterialResponseDto> {
     // Validate workspace access if visibility is WORKSPACE
     if (dto.visibility === MaterialVisibility.WORKSPACE && !dto.workspaceId) {
@@ -48,6 +49,7 @@ export class MaterialService {
     try {
       const material = await this.database.material.create({
         data: {
+          id: generateId(ID_PREFIXES.MATERIAL),
           name: dto.name,
           description: dto.description,
           videoUrls: dto.videoUrls || [],
@@ -95,8 +97,8 @@ export class MaterialService {
     workspaceIds = [],
   }: {
     searchDto: SearchMaterialsDto;
-    userId: number;
-    workspaceIds: number[];
+    userId: string;
+    workspaceIds: string[];
   }): Promise<PaginatedResponseDto<MaterialResponseDto>> {
     const { skip, take } = this.pagination.extractPaginationOptions(searchDto);
 
@@ -195,9 +197,9 @@ export class MaterialService {
 
   // Find material by ID with access control
   async findMaterialById(
-    id: number,
-    userId: number,
-    workspaceIds: number[] = [],
+    id: string,
+    userId: string,
+    workspaceIds: string[] = [],
   ): Promise<MaterialResponseDto> {
     const material = await this.database.material.findFirst({
       where: {
@@ -241,9 +243,9 @@ export class MaterialService {
 
   // Update material
   async updateMaterial(
-    id: number,
+    id: string,
     dto: UpdateMaterialDto,
-    userId: number,
+    userId: string,
   ): Promise<MaterialResponseDto> {
     const existingMaterial = await this.database.material.findFirst({
       where: {
@@ -323,7 +325,7 @@ export class MaterialService {
   }
 
   // Soft delete material
-  async deleteMaterial(id: number, userId: number): Promise<void> {
+  async deleteMaterial(id: string, userId: string): Promise<void> {
     const material = await this.database.material.findFirst({
       where: {
         id,
@@ -351,10 +353,10 @@ export class MaterialService {
 
   // Share material with a student
   async shareMaterialWithStudent(
-    materialId: number,
-    studentId: number,
+    materialId: string,
+    studentId: string,
     shareDto: ShareMaterialDto,
-    sharedById: number,
+    sharedById: string,
   ): Promise<void> {
     // Verify material exists and user has access
     const material = await this.database.material.findFirst({
@@ -381,6 +383,7 @@ export class MaterialService {
         },
       },
       create: {
+        id: generateId(ID_PREFIXES.MATERIAL_STUDENT_SHARE),
         materialId,
         studentId,
         sharedById,
@@ -395,7 +398,7 @@ export class MaterialService {
   }
 
   // Get materials shared with a student
-  async getSharedMaterials(studentId: number): Promise<MaterialResponseDto[]> {
+  async getSharedMaterials(studentId: string): Promise<MaterialResponseDto[]> {
     const shares = await this.database.materialStudentShare.findMany({
       where: {
         studentId,
@@ -427,13 +430,13 @@ export class MaterialService {
       },
     });
 
-    return shares.map((share) => new MaterialResponseDto(share.material));
+    return shares.map((share) => new MaterialResponseDto(share.material!));
   }
 
   // Mark material as viewed by student
   async markMaterialAsViewed(
-    materialId: number,
-    studentId: number,
+    materialId: string,
+    studentId: string,
   ): Promise<void> {
     await this.database.materialStudentShare.updateMany({
       where: {
@@ -448,8 +451,8 @@ export class MaterialService {
 
   // Private helper methods
   private async validateParentMaterialAccess(
-    parentMaterialId: number,
-    userId: number,
+    parentMaterialId: string,
+    userId: string,
   ): Promise<void> {
     const parentMaterial = await this.database.material.findFirst({
       where: {

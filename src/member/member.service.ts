@@ -13,6 +13,7 @@ import { MemberResponseDto } from './dto/member-response.dto';
 import { SearchMembersDto } from './dto/search-member.dto';
 import { getLevelName, getLevelValue } from './enums/dance-level.enum';
 import { MemberWithUser } from './member.types';
+import { generateId, ID_PREFIXES } from '../lib/id-generator';
 
 import { DatabaseService } from '@/database/database.service';
 import { PaginatedResponseDto, PaginationDto } from '@/pagination/dto';
@@ -39,7 +40,7 @@ export class MemberService {
    */
   async userHasWorkspaceRoles(
     slug: string,
-    userId: number,
+    userId: string,
     roles: WorkspaceRole[],
   ): Promise<boolean> {
     const workspace = await this.workspaceService.findWorkspaceBySlug(slug);
@@ -67,7 +68,7 @@ export class MemberService {
    * @param userId The user ID
    * @returns The membership or null if not found
    */
-  async findUserMembershipInWorkspace(workspaceId: number, userId: number) {
+  async findUserMembershipInWorkspace(workspaceId: string, userId: string) {
     return this.database.member.findFirst({
       where: {
         workspaceId,
@@ -108,7 +109,7 @@ export class MemberService {
     return workspace;
   }
   async getWorkspaceMembers(
-    workspaceId: number,
+    workspaceId: string,
     queryParams: SearchMembersDto,
     paginationOptions: PaginationDto,
   ): Promise<PaginatedResponseDto<MemberResponseDto>> {
@@ -198,7 +199,7 @@ export class MemberService {
   }
 
   async getAllWorkspaceMembers(
-    workspaceId: number,
+    workspaceId: string,
     paginationOptions: PaginationDto,
   ): Promise<PaginatedResponseDto<MemberResponseDto>> {
     return await this.getWorkspaceMembers(workspaceId, {}, paginationOptions);
@@ -222,6 +223,7 @@ export class MemberService {
     }
     const memberSeat = await this.database.member.create({
       data: {
+        id: generateId(ID_PREFIXES.MEMBER),
         createdById: creator.id,
         workspaceId: workspace.id,
         name: data.memberName
@@ -238,7 +240,7 @@ export class MemberService {
     return this.mapToMemberResponseDto(memberSeat);
   }
 
-  async getMemberByUserId(userId: number, workspaceId: number) {
+  async getMemberByUserId(userId: string, workspaceId: string) {
     const member = await this.database.member.findFirst({
       where: {
         userId: userId,
@@ -248,7 +250,7 @@ export class MemberService {
     return member;
   }
 
-  async findMemberByUserId(userId: number, workspaceId: number) {
+  async findMemberByUserId(userId: string, workspaceId: string) {
     const member = await this.getMemberByUserId(userId, workspaceId);
     if (!!member) {
       throw new NotFoundException('Member does not exist.');
@@ -256,7 +258,7 @@ export class MemberService {
     return member;
   }
 
-  async getMember(memberId: number) {
+  async getMember(memberId: string) {
     const member = await this.database.member.findFirst({
       where: {
         id: memberId,
@@ -265,7 +267,7 @@ export class MemberService {
     return member;
   }
 
-  async findMember(memberId: number) {
+  async findMember(memberId: string) {
     const member = await this.getMember(memberId);
     if (!!member) {
       throw new NotFoundException('Member does not exist.');
@@ -273,7 +275,7 @@ export class MemberService {
     return member;
   }
 
-  async delete(memberId: number) {
+  async delete(memberId: string) {
     const deletedMember = await this.database.member.delete({
       where: {
         id: memberId,
@@ -282,7 +284,7 @@ export class MemberService {
 
     if (!!deletedMember) throw new NotFoundException('Member does not exist');
   }
-  async deleteByUserId(userId: number, workspaceId: number) {
+  async deleteByUserId(userId: string, workspaceId: string) {
     const memberToDelete = await this.findMemberByUserId(userId, workspaceId);
 
     const deletedMember = await this.database.member.delete({

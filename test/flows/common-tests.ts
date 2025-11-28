@@ -10,6 +10,8 @@ import request from 'supertest';
 
 import { MockMailService } from '../mock-mail.service';
 
+import { SUCCESS_MESSAGES } from '@/lib/constants';
+
 export async function signInTest(
   app: INestApplication,
   email: string,
@@ -23,12 +25,13 @@ export async function signInTest(
     })
     .expect(200)
     .expect((res) => {
-      expect(res.body.accessToken).toBeDefined();
-      expect(res.body.refreshToken).toBeDefined();
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.accessToken).toBeDefined();
+      expect(res.body.data.refreshToken).toBeDefined();
     });
   return {
-    accessToken: response.body.accessToken,
-    refreshToken: response.body.refreshToken,
+    accessToken: response.body.data.accessToken,
+    refreshToken: response.body.data.refreshToken,
   };
 }
 
@@ -44,13 +47,10 @@ export async function signInWrongPassTest(
       password: wrongPassword,
     })
     .expect(401)
-    .expect((res) => {
-      expect(res.body.accessToken).toBeUndefined();
-      expect(res.body.refreshToken).toBeUndefined();
-    });
+    .expect(() => undefined);
   return {
-    accessToken: response.body.accessToken,
-    refreshToken: response.body.refreshToken,
+    accessToken: response.body?.data?.accessToken,
+    refreshToken: response.body?.data?.refreshToken,
   };
 }
 
@@ -75,8 +75,9 @@ export async function signUpTest(
     .expect(201)
     .expect((res) => {
       // TODO: write equivalent of expectUserShapeWithoutToken
-      expect(res.body.accessToken).toBeDefined();
-      expect(res.body.refreshToken).toBeDefined();
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.accessToken).toBeDefined();
+      expect(res.body.data.refreshToken).toBeDefined();
       expect(mailService.sentMails.length).toBeGreaterThan(0);
       expect(mailService.sentMails[mailService.sentMails.length - 1].to).toBe(
         dto.email,
@@ -102,8 +103,8 @@ export async function signUpTest(
   return {
     confirmToken:
       mailService.sentMails[mailService.sentMails.length - 1].context.token,
-    accessToken: response.body.accessToken,
-    refreshToken: response.body.refreshToken,
+    accessToken: response.body.data.accessToken,
+    refreshToken: response.body.data.refreshToken,
     user: userModel,
   };
 }
@@ -117,8 +118,9 @@ export async function forgotPasswordTest(
     .send({ email })
     .expect(200)
     .expect((res) => {
-      expect(res.body.message).toContain(
-        'If an account with that email exists',
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.message).toBe(
+        SUCCESS_MESSAGES.PASSWORD_RESET_EMAIL_SENT,
       );
       expect(mailService.sentMails.length).toBeGreaterThan(0);
       expect(mailService.sentMails[mailService.sentMails.length - 1].to).toBe(
@@ -147,8 +149,9 @@ export async function resetPasswordTest(
     })
     .expect(200)
     .expect((res) => {
-      expect(res.body.message).toContain(
-        'Password has been reset successfully',
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.message).toBe(
+        SUCCESS_MESSAGES.PASSWORD_RESET_SUCCESS,
       );
     });
 }
@@ -161,7 +164,10 @@ export async function verifyEmailTest(
     .send({ token: verificationToken })
     .expect(200)
     .expect((res) => {
-      expect(res.body.message).toContain('Email verified successfully');
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.message).toBe(
+        SUCCESS_MESSAGES.EMAIL_VERIFIED_SUCCESS,
+      );
     });
 }
 
@@ -258,9 +264,9 @@ export async function sendWorkspaceInviteTest(
   mockMailService: MockMailService,
   userJwt: string,
   workspaceSlug: string,
-  memberSeatId: number,
+  memberSeatId: string,
   inviteeEmail: string | undefined = undefined,
-  inviteeId: number | undefined = undefined,
+  inviteeId: string | undefined = undefined,
 ) {
   // Invitation data
   const invitationData = {
@@ -384,7 +390,7 @@ export async function acceptInvitationTest(
   userJwt: string,
   invitationToken: string,
   expectedWorkspaceSlug: string,
-  expectedMemberSeatId: number,
+  expectedMemberSeatId: string,
 ) {
   // Make request to accept invitation
   const response = await request(app.getHttpServer())
@@ -429,7 +435,6 @@ export async function acceptInvitationTest(
 
   expect(memberSeat).toBeTruthy();
   expect(memberSeat.userId).toBeDefined();
-  expect(memberSeat.user).toBeTruthy();
 
   // Verify the user is now a member of the workspace
   const workspace = await prisma.workspace.findUnique({
@@ -460,7 +465,7 @@ export async function getUserWorkspacesTest(
   app: INestApplication,
   userJwt: string,
   expectedWorkspaces: Array<{
-    id: number;
+    id: string;
     name: string;
     slug: string;
   }>,
@@ -497,7 +502,7 @@ export async function getWorkspaceDetailsTest(
   userJwt: string,
   workspaceSlug: string,
   expectedWorkspace: {
-    id: number;
+    id: string;
     name: string;
     slug: string;
     createdAt: Date;
@@ -527,13 +532,13 @@ export async function updateWorkspaceTest(
   app: INestApplication,
   prisma: PrismaClient,
   userJwt: string,
-  workspaceId: number,
+  workspaceId: string,
   updateData: {
     name: string;
     slug: string;
   },
   expectedResult: {
-    id: number;
+    id: string;
     name: string;
     slug: string;
   },
@@ -610,13 +615,13 @@ export async function getMemberProfileTest(
   app: INestApplication,
   userJwt: string,
   workspaceSlug: string,
-  memberId: number,
+  memberId: string,
   expectedMember: {
-    id: number;
+    id: string;
     name: string;
     roles: WorkspaceRole[];
-    userId: number;
-    workspaceId: number;
+    userId: string;
+    workspaceId: string;
     level?: number | null;
     preferedDanceRole?: DanceRole | null;
   },

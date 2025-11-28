@@ -37,7 +37,7 @@
     "test:e2e": "pnpm run db:test:reset && jest --config ./test/jest-e2e.config.ts",
     "test:watch": "jest --watch",
     "test": "jest",
-    "typescript": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "seed": "ts-node -r tsconfig-paths/register prisma/seed.ts"
   },
   "dependencies": {

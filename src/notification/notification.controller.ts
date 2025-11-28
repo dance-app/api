@@ -8,7 +8,6 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
-  ParseIntPipe,
   UnauthorizedException,
 } from '@nestjs/common';
 import {
@@ -114,7 +113,7 @@ export class NotificationController {
   })
   async getNotification(
     @GetAuthUser() user: UserWithAccount,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
   ): Promise<Notification> {
     const notification = await this.notificationService.getNotification(id);
 
@@ -151,7 +150,7 @@ export class NotificationController {
   })
   async updateNotification(
     @GetAuthUser() user: UserWithAccount,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() updateNotificationDto: UpdateNotificationDto,
   ): Promise<Notification> {
     // First check if the notification belongs to the user

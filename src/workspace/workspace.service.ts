@@ -8,6 +8,7 @@ import { WeekStart, Workspace, WorkspaceRole, Prisma } from '@prisma/client';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { WorkspaceResponseDto } from './dto/workspace-response.dto';
 import { WorkspaceWithConfig, WorkspaceWithMember } from './worspace.types';
+import { generateId, ID_PREFIXES } from '../lib/id-generator';
 
 import { DatabaseService } from '@/database/database.service';
 import { PaginationDto } from '@/pagination/dto';
@@ -110,8 +111,8 @@ export class WorkspaceService {
 
   async createWithOwner(
     createWorkspaceDto: CreateWorkspaceDto,
-    createdById: number, // Owner or Super admin ID
-    ownerId?: number, // Assigned owner ID
+    createdById: string, // Owner or Super admin ID
+    ownerId?: string, // Assigned owner ID
   ) {
     const { name, slug, weekStart } = createWorkspaceDto;
 
@@ -144,14 +145,16 @@ export class WorkspaceService {
     }
 
     return await this.database.$transaction(async (prisma) => {
-      // Create workspace
+      // Create workspace with prefixed ID
       const workspace = await prisma.workspace.create({
         data: {
+          id: generateId(ID_PREFIXES.WORKSPACE),
           name,
           slug: workspaceSlug,
           createdById: createdById, // Super admin ID as creator
           configuration: {
             create: {
+              id: generateId(ID_PREFIXES.WORKSPACE_CONFIG),
               weekStart: weekStart || WeekStart.MONDAY,
             },
           },
@@ -161,6 +164,7 @@ export class WorkspaceService {
       // Add specified user as owner
       await prisma.member.create({
         data: {
+          id: generateId(ID_PREFIXES.MEMBER),
           createdById,
           userId: ownerId,
           workspaceId: workspace.id,
@@ -172,11 +176,11 @@ export class WorkspaceService {
       return this.toDto(workspace);
     });
   }
-  async create(payload: CreateWorkspaceDto, ownerUserId: number) {
+  async create(payload: CreateWorkspaceDto, ownerUserId: string) {
     return await this.createWithOwner(payload, ownerUserId);
   }
 
-  async update(id: number, payload: Pick<Workspace, 'name'>) {
+  async update(id: string, payload: Pick<Workspace, 'name'>) {
     const data = await this.database.workspace.update({
       where: { id },
       data: {
@@ -190,7 +194,7 @@ export class WorkspaceService {
     };
   }
 
-  async delete(id: number) {
+  async delete(id: string) {
     // Check if workspace exists and is not already deleted
     const workspace = await this.database.workspace.findFirst({
       where: {

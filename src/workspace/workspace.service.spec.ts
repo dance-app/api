@@ -70,12 +70,13 @@ describe('WorkspaceService', () => {
 
   describe('delete', () => {
     const workspaceRecord = {
-      id: 1,
+      id: 'workspace_123e4567-e89b-12d3-a456-426614174000',
       name: 'Demo Workspace',
       slug: 'demo-workspace',
       deletedAt: null,
       createdAt: new Date('2024-01-01T00:00:00.000Z'),
       updatedAt: new Date('2024-01-02T00:00:00.000Z'),
+      createdById: 'user_123e4567-e89b-12d3-a456-426614174000',
     };
 
     it('soft deletes the workspace and clears the slug', async () => {
@@ -122,7 +123,7 @@ describe('WorkspaceService', () => {
 
   describe('canAccessWorkspace', () => {
     const mockUser: UserWithAccount = {
-      id: 1,
+      id: 'user_123e4567-e89b-12d3-a456-426614174000',
       firstName: 'Test',
       lastName: 'User',
       isSuperAdmin: false,
@@ -130,12 +131,13 @@ describe('WorkspaceService', () => {
     } as UserWithAccount;
 
     const workspaceRecord = {
-      id: 1,
+      id: 'workspace_123e4567-e89b-12d3-a456-426614174000',
       name: 'Test Workspace',
       slug: 'test-workspace',
       deletedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
+      createdById: 'user_123e4567-e89b-12d3-a456-426614174000',
     };
 
     it('returns true when workspace does not exist', async () => {
@@ -205,13 +207,13 @@ describe('WorkspaceService', () => {
 
   describe('getWorkspaceBySlug', () => {
     const workspaceRecord = {
-      id: 1,
+      id: 'workspace_123e4567-e89b-12d3-a456-426614174000',
       name: 'Test Workspace',
       slug: 'test-workspace',
       deletedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-      createdById: 1,
+      createdById: 'user_123e4567-e89b-12d3-a456-426614174000',
     };
 
     it('returns workspace when found', async () => {
@@ -225,7 +227,7 @@ describe('WorkspaceService', () => {
       });
       expect(result).toEqual(
         expect.objectContaining({
-          id: 1,
+          id: workspaceRecord.id,
           name: 'Test Workspace',
           slug: 'test-workspace',
           createdAt: workspaceRecord.createdAt,
@@ -245,13 +247,13 @@ describe('WorkspaceService', () => {
 
   describe('update', () => {
     const workspaceRecord = {
-      id: 1,
+      id: 'workspace_123e4567-e89b-12d3-a456-426614174000',
       name: 'Old Name',
       slug: 'test-workspace',
       deletedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-      createdById: 1,
+      createdById: 'user_123e4567-e89b-12d3-a456-426614174000',
     };
 
     it('updates workspace name', async () => {
@@ -260,10 +262,12 @@ describe('WorkspaceService', () => {
         name: 'New Name',
       });
 
-      const result = await service.update(1, { name: 'New Name' });
+      const result = await service.update(workspaceRecord.id, {
+        name: 'New Name',
+      });
 
       expect(database.workspace.update).toHaveBeenCalledWith({
-        where: { id: 1 },
+        where: { id: workspaceRecord.id },
         data: { name: 'New Name' },
       });
       expect(result.message).toBe('User updated');
@@ -273,21 +277,22 @@ describe('WorkspaceService', () => {
 
   describe('readById', () => {
     const workspaceRecord = {
-      id: 1,
+      id: 'workspace_123e4567-e89b-12d3-a456-426614174000',
       name: 'Test Workspace',
       slug: 'test-workspace',
       deletedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
+      createdById: 'user_123e4567-e89b-12d3-a456-426614174000',
     };
 
     it('returns workspace when found', async () => {
       database.workspace.findFirst.mockResolvedValue(workspaceRecord);
 
-      const result = await service.readById({ id: 1 });
+      const result = await service.readById({ id: workspaceRecord.id });
 
       expect(database.workspace.findFirst).toHaveBeenCalledWith({
-        where: { id: 1, deletedAt: null },
+        where: { id: workspaceRecord.id, deletedAt: null },
       });
       expect(result.data).toEqual(workspaceRecord);
     });
@@ -295,7 +300,9 @@ describe('WorkspaceService', () => {
     it('returns null data when workspace not found', async () => {
       database.workspace.findFirst.mockResolvedValue(null);
 
-      const result = await service.readById({ id: 999 });
+      const result = await service.readById({
+        id: 'workspace_nonexistent-uuid',
+      });
 
       expect(result.data).toBeNull();
     });

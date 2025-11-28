@@ -49,15 +49,15 @@ model User {
 }
 
 model NotificationPreferences {
-  id                      String     @id @default(uuid())
-  userId                  String     @unique
+  id                      Int     @id @default(autoincrement())
+  userId                  Int     @unique
   emailNotificationsEnabled Boolean @default(true)
 
   user                    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Account {
-  id String @id @default(uuid())
+  id Int @id @default(autoincrement())
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
@@ -67,7 +67,7 @@ model Account {
   isEmailVerified Boolean?
 
   user User @relation(fields: [userId], references: [id])
-  userId String
+  userId Int
 
   resetToken      PasswordResetToken?
   emailToken      EmailConfirmationToken?
@@ -76,38 +76,38 @@ model Account {
 }
 
 model PasswordResetToken {
-  id              String           @id @default(uuid())
+  id              Int           @id @default(autoincrement())
   createdAt       DateTime      @default(now()) @db.Timestamptz(3)
   expiresAt       DateTime      @db.Timestamptz(3)
 
   token           String        @unique @db.Uuid
-
+  
   account         Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  accountId       String           @unique
-
+  accountId       Int           @unique
+  
   @@map("password_reset_tokens")
 }
 
 model EmailConfirmationToken {
-  id              String           @id @default(uuid())
+  id              Int           @id @default(autoincrement())
   createdAt       DateTime      @default(now()) @db.Timestamptz(3)
   expiresAt       DateTime      @db.Timestamptz(3)
-
+  
   token           String        @unique @db.Uuid
-
+  
   account         Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  accountId       String           @unique
-
+  accountId       Int           @unique
+  
   @@map("email_confirmation_tokens")
 }
 
 model Workspace {
-  id String @id @default(uuid())
+  id Int @id @default(autoincrement())
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
   deletedAt DateTime? @db.Timestamptz(3)
-
-  createdById String // ID of the user who created this workspace
+  
+  createdById Int // ID of the user who created this workspace
   createdBy User @relation(fields: [createdById], references: [id])
 
   name String
@@ -123,14 +123,14 @@ model Workspace {
 }
 
 model WorkspaceConfig {
-  id String @id @default(uuid())
+  id Int @id @default(autoincrement())
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   weekStart WeekStart
 
   workspace Workspace @relation(fields: [workspaceId], references: [id])
-  workspaceId String @unique
+  workspaceId Int @unique
 
   danceTypes DanceType[] @relation("workspaceDanceTypes")
 
@@ -138,22 +138,22 @@ model WorkspaceConfig {
 }
 
 model Member {
-  id String @id @default(uuid())
+  id Int @id @default(autoincrement())
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
-
-  createdById String // ID of the user who added the member to the workspace
+  
+  createdById Int // ID of the user who added the member to the workspace
   createdBy User @relation(name: "createdMembers", fields: [createdById], references: [id])
 
 
   user User? @relation(name: "workspaces", fields: [userId], references: [id])
-  userId String?
+  userId Int?
 
   name String? // Can be empty if the user exists, required if user is null, by default, overrided by user.firstName + user.lastName
-
+  
   workspace Workspace @relation(fields: [workspaceId], references: [id])
-  workspaceId String
+  workspaceId Int
 
   attendances Attendee[]
 
@@ -168,13 +168,13 @@ model Member {
 }
 
 model Event {
-  id String @id @default(uuid())
+  id Int @id @default(autoincrement())
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  //createdById String
-  //createdBy User
-  // managedById String
+  //createdById Int 
+  //createdBy User 
+  // managedById Int
   // managedBy Member
 
   name String
@@ -196,13 +196,13 @@ model Event {
   danceTypes DanceType[] @relation("eventDanceTypes")
 
   organizer Workspace @relation(fields: [organizerId], references: [id])
-  organizerId String
+  organizerId Int
 
   @@map("events")
 }
 
 model Attendee {
-  id          String           @id @default(uuid())
+  id          Int           @id @default(autoincrement())
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
@@ -211,10 +211,10 @@ model Attendee {
   type AttendanceType @default(WAITING)
 
   member Member @relation(fields: [memberId], references: [id])
-  memberId String
+  memberId Int
 
   event Event @relation(fields: [eventId], references: [id])
-  eventId String
+  eventId Int
 
   invitation Invitation? @relation("invitation") // invited through this invitatino
 
@@ -223,26 +223,26 @@ model Attendee {
 }
 
 model Notification {
-  id String @id @default(uuid())
+  id Int @id @default(autoincrement())
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
-
-  user User @relation(fields: [userId], references: [id])
-  userId String
-
+  
+  user User @relation(fields: [userId], references: [id]) 
+  userId Int
+  
   type        NotificationType // Using an enum now
-
+  
   read        Boolean          @default(false)
 
   // Specific relationships
   invitation   Invitation? @relation(fields: [invitationId], references: [id])
-  invitationId String?
-
+  invitationId Int?
+  
   // Future relationships could be added here
   // event        Event?      @relation(fields: [eventId], references: [id])
-  // eventId      String?
+  // eventId      Int?
   // member       Member?     @relation(fields: [memberId], references: [id])
-  // memberId     String?
+  // memberId     Int?
 
   @@index([userId])
   @@index([type])
@@ -251,7 +251,7 @@ model Notification {
 
 
 model Invitation {
-  id          String           @id @default(uuid())
+  id          Int           @id @default(autoincrement())
   createdAt   DateTime      @default(now()) @db.Timestamptz(3)
   updatedAt   DateTime      @updatedAt @db.Timestamptz(3)
 
@@ -264,34 +264,34 @@ model Invitation {
   token       String        @unique @db.Uuid
   expiresAt   DateTime      @db.Timestamptz(3)
   status      InvitationStatus @default(PENDING)
-
+  
   // Relation to workspace being invited to
   workspace   Workspace?     @relation(fields: [workspaceId], references: [id])
-  workspaceId String?
-
+  workspaceId Int?
+  
   // Who sent the invitation
   inviter     User          @relation("sentInvitations", fields: [inviterId], references: [id])
-  inviterId   String
-
+  inviterId   Int
+  
   invitee     User?         @relation("receivedInvitations", fields: [inviteeId], references: [id])
-  inviteeId   String?
-
-  memberSeatId String? @unique // The member the invitee will be linked with when he accepts the invitation
+  inviteeId   Int?
+  
+  memberSeatId Int? @unique // The member the invitee will be linked with when he accepts the invitation
   memberSeat Member? @relation("invitation", fields: [memberSeatId], references: [id])
-
+  
   event   Event?     @relation(fields: [eventId], references: [id])
-  eventId String?
+  eventId Int?
 
-  attendeeSeatId String? @unique // The attendee the invitee will be linked with when he accepts the invitation
+  attendeeSeatId Int? @unique // The attendee the invitee will be linked with when he accepts the invitation
   attendeeSeat Attendee? @relation("invitation", fields: [attendeeSeatId], references: [id])
-
+  
   notifications Notification[] // notifications related to this invitation (received, accepted, declined, ...)
-
+  
   @@map("invitations")
 }
 
 model DanceType {
-  id String @id @default(uuid())
+  id Int @id @default(autoincrement())
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
@@ -302,10 +302,10 @@ model DanceType {
 
   // Events can reference dance types
   events Event[] @relation("eventDanceTypes")
-
+  
   // Materials of this dance type
   materials Material[] @relation("materialDanceType")
-
+  
   // Workspace that offers this dance type
   workspaceConfigs WorkspaceConfig[] @relation("workspaceDanceTypes")
 
@@ -313,7 +313,7 @@ model DanceType {
 }
 
 model Material {
-  id String @id @default(uuid())
+  id Int @id @default(autoincrement())
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
   deletedAt DateTime? @db.Timestamptz(3)
@@ -329,15 +329,15 @@ model Material {
 
   // Creator/Owner
   createdBy User @relation("createdMaterials", fields: [createdById], references: [id])
-  createdById String
+  createdById Int
 
   // Workspace scope (null if private or public)
   workspace Workspace? @relation(fields: [workspaceId], references: [id])
-  workspaceId String?
+  workspaceId Int?
 
   // Hierarchical relationships - self-referencing for composite materials
   parentMaterial Material? @relation("MaterialHierarchy", fields: [parentMaterialId], references: [id])
-  parentMaterialId String?
+  parentMaterialId Int?
   childMaterials Material[] @relation("MaterialHierarchy")
 
   // Events that use this material
@@ -345,7 +345,7 @@ model Material {
 
   // Dance type relationship
   danceType DanceType? @relation("materialDanceType", fields: [danceTypeId], references: [id])
-  danceTypeId String?
+  danceTypeId Int?
 
   // Individual student shares (optional feature)
   studentShares MaterialStudentShare[]
@@ -354,17 +354,17 @@ model Material {
 }
 
 model MaterialStudentShare {
-  id String @id @default(uuid())
+  id Int @id @default(autoincrement())
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
-  materialId String
+  materialId Int
 
   student User @relation("receivedMaterials", fields: [studentId], references: [id])
-  studentId String
+  studentId Int
 
   sharedBy User @relation("sharedMaterials", fields: [sharedById], references: [id])
-  sharedById String
+  sharedById Int
 
   // Tracking
   viewedAt DateTime?

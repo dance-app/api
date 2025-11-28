@@ -27,7 +27,7 @@ describe('Workspace CRUD (e2e)', () => {
   };
 
   let ownerAccessToken: string;
-  let workspaceId: number;
+  let workspaceId: string;
   let workspaceSlug: string;
 
   beforeAll(async () => {
@@ -84,7 +84,7 @@ describe('Workspace CRUD (e2e)', () => {
 
     expect(createResponse.body).toEqual(
       expect.objectContaining({
-        id: expect.any(Number),
+        id: expect.any(String),
         name: 'My First Studio',
         slug: slugBase,
         configuration: expect.any(Object),

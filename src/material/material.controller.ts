@@ -35,7 +35,7 @@ export class MaterialController {
   @ApiResponse({ status: 201, type: MaterialResponseDto })
   async createMaterial(
     @Body() createDto: CreateMaterialDto,
-    @GetAuthUser('id') userId: number,
+    @GetAuthUser('id') userId: string,
   ): Promise<MaterialResponseDto> {
     return this.materialService.createMaterial(createDto, userId);
   }
@@ -45,7 +45,7 @@ export class MaterialController {
   @ApiResponse({ status: 200, type: [MaterialResponseDto] })
   async findMaterials(
     @GetPagination() searchDto: SearchMaterialsDto,
-    @GetAuthUser('id') userId: number,
+    @GetAuthUser('id') userId: string,
     @GetAuthUser('workspaces') userWorkspaces: any[], // This should be typed based on your auth system
   ): Promise<PaginatedResponseDto<MaterialResponseDto>> {
     const workspaceIds = userWorkspaces?.map((w) => w.workspaceId) || [];
@@ -60,7 +60,7 @@ export class MaterialController {
   @ApiOperation({ summary: 'Get materials shared with the current user' })
   @ApiResponse({ status: 200, type: [MaterialResponseDto] })
   async getSharedMaterials(
-    @GetAuthUser('id') userId: number,
+    @GetAuthUser('id') userId: string,
   ): Promise<MaterialResponseDto[]> {
     return this.materialService.getSharedMaterials(userId);
   }
@@ -70,11 +70,11 @@ export class MaterialController {
   @ApiResponse({ status: 200, type: MaterialResponseDto })
   async findMaterialById(
     @Param('id') id: string,
-    @GetAuthUser('id') userId: number,
+    @GetAuthUser('id') userId: string,
     @GetAuthUser('workspaces') userWorkspaces: any[],
   ): Promise<MaterialResponseDto> {
     const workspaceIds = userWorkspaces?.map((w) => w.workspaceId) || [];
-    return this.materialService.findMaterialById(+id, userId, workspaceIds);
+    return this.materialService.findMaterialById(id, userId, workspaceIds);
   }
 
   @Patch(':id')
@@ -83,9 +83,9 @@ export class MaterialController {
   async updateMaterial(
     @Param('id') id: string,
     @Body() updateDto: UpdateMaterialDto,
-    @GetAuthUser('id') userId: number,
+    @GetAuthUser('id') userId: string,
   ): Promise<MaterialResponseDto> {
-    return this.materialService.updateMaterial(+id, updateDto, userId);
+    return this.materialService.updateMaterial(id, updateDto, userId);
   }
 
   @Delete(':id')
@@ -93,9 +93,9 @@ export class MaterialController {
   @ApiResponse({ status: 204 })
   async deleteMaterial(
     @Param('id') id: string,
-    @GetAuthUser('id') userId: number,
+    @GetAuthUser('id') userId: string,
   ): Promise<void> {
-    return this.materialService.deleteMaterial(+id, userId);
+    return this.materialService.deleteMaterial(id, userId);
   }
 
   @Post(':id/share/:studentId')
@@ -105,11 +105,11 @@ export class MaterialController {
     @Param('id') materialId: string,
     @Param('studentId') studentId: string,
     @Body() shareDto: ShareMaterialDto,
-    @GetAuthUser('id') userId: number,
+    @GetAuthUser('id') userId: string,
   ): Promise<void> {
     return this.materialService.shareMaterialWithStudent(
-      +materialId,
-      +studentId,
+      materialId,
+      studentId,
       shareDto,
       userId,
     );
@@ -120,8 +120,8 @@ export class MaterialController {
   @ApiResponse({ status: 200 })
   async markMaterialAsViewed(
     @Param('id') materialId: string,
-    @GetAuthUser('id') userId: number,
+    @GetAuthUser('id') userId: string,
   ): Promise<void> {
-    return this.materialService.markMaterialAsViewed(+materialId, userId);
+    return this.materialService.markMaterialAsViewed(materialId, userId);
   }
 }

@@ -13,14 +13,14 @@ export class SearchMaterialsDto extends PaginationDto {
   visibility?: MaterialVisibility;
 
   @IsOptional()
-  workspaceId?: number;
+  workspaceId?: string;
 
   @IsOptional()
-  createdById?: number;
+  createdById?: string;
 
   @IsOptional()
-  parentMaterialId?: number;
+  parentMaterialId?: string;
 
   @IsOptional()
-  danceTypeId?: number;
+  danceTypeId?: string;
 }

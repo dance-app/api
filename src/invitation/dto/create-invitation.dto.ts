@@ -1,9 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
 import {
   IsEmail,
   IsEnum,
-  IsInt,
   IsOptional,
   IsString,
   ValidateIf,
@@ -27,8 +25,8 @@ export class BaseInvitationDto {
   })
   @ValidateIf((o) => !o.email)
   @IsOptional()
-  @IsInt()
-  inviteeId?: number;
+  @IsString()
+  inviteeId?: string;
 
   @ApiProperty({
     description: 'Type of invitation: "workspace" or "event"',
@@ -44,9 +42,8 @@ export class CreateWorkspaceInvitationDto extends BaseInvitationDto {
     description:
       'ID of the existing member that the user will be linked to if they accept the invitation',
   })
-  @IsInt()
-  @Type(() => Number)
-  memberSeatId: number;
+  @IsString()
+  memberSeatId: string;
 
   @ApiProperty({
     description: 'The workspace Slug where the user is being invited',
@@ -62,9 +59,8 @@ export class CreateEventInvitationDto extends BaseInvitationDto {
     description:
       'ID of the existing member that the user will be linked to if they accept the invitation',
   })
-  @IsInt()
-  @Type(() => Number)
-  attendeeSeatId: number;
+  @IsString()
+  attendeeSeatId: string;
 
   @ApiProperty({
     description: 'The event ID where the user is being invited',

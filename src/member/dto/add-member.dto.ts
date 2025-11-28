@@ -3,7 +3,6 @@ import {
   IsArray,
   IsEmail,
   IsEnum,
-  IsInt,
   IsNumber,
   IsOptional,
   IsString,
@@ -20,9 +19,9 @@ export class AddMemberDto {
   @IsOptional()
   memberName?: string;
 
-  @IsInt()
+  @IsString()
   @IsOptional()
-  userId?: number;
+  userId?: string;
 
   @IsArray()
   @IsEnum(WorkspaceRole, { each: true })

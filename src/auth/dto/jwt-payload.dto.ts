@@ -1,9 +1,9 @@
 import { AccountProvider } from '@prisma/client';
 
 export class JwtPayload {
-  uid: number; // User ID
+  uid: string; // User ID
   email: string;
-  aid: number; // Account id
+  aid: string; // Account id
   provider: AccountProvider;
   isSuperAdmin?: boolean;
   iat?: number; // Issued at

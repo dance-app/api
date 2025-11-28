@@ -5,7 +5,7 @@ import { SafeAccountDto } from './safe-account.dto';
 
 export class SafeUserDto {
   @ApiProperty({ description: 'User ID' })
-  id: number;
+  id: string;
 
   @ApiProperty({ description: 'User first name' })
   firstName: string;

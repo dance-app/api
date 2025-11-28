@@ -7,7 +7,7 @@ import {
 } from '@prisma/client';
 
 export class MaterialResponseDto {
-  id: number;
+  id: string;
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;
@@ -16,9 +16,9 @@ export class MaterialResponseDto {
   videoUrls: string[];
   imageUrls: string[];
   visibility: MaterialVisibility;
-  workspaceId?: number;
-  parentMaterialId?: number;
-  danceTypeId?: number;
+  workspaceId?: string;
+  parentMaterialId?: string;
+  danceTypeId?: string;
 
   // Related entities
   createdBy?: Pick<User, 'id' | 'firstName' | 'lastName'>;

@@ -11,6 +11,7 @@ import {
 //import { NotificationResponseDto } from './dto/notification-response.dto';
 import { SearchNotificationsDto } from './dto/search-notifications.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
+import { generateId, ID_PREFIXES } from '../lib/id-generator';
 
 import { UserCreatedEvent } from '@/auth/event/user-created.event';
 import { DatabaseService } from '@/database/database.service';
@@ -49,11 +50,12 @@ export class NotificationService {
   // ==========================================
 
   async createInvitationReceivedNotification(
-    inviteeId: number,
-    invitationId: number,
+    inviteeId: string,
+    invitationId: string,
   ): Promise<Notification> {
     const notification = await this.database.notification.create({
       data: {
+        id: generateId(ID_PREFIXES.NOTIFICATION),
         userId: inviteeId,
         type: NotificationType.INVITATION_RECEIVED,
         invitationId,
@@ -156,7 +158,7 @@ export class NotificationService {
 
   // Get user notifications with pagination and filtering (enriches metadata)
   async getUserNotifications(
-    userId: number,
+    userId: string,
     queryParams: SearchNotificationsDto,
     paginationOptions: PaginationDto,
   ): Promise<PaginatedResponseDto<Notification>> {
@@ -196,7 +198,7 @@ export class NotificationService {
   }
 
   // Get notification by ID (enriches metadata)
-  async getNotification(id: number): Promise<Notification> {
+  async getNotification(id: string): Promise<Notification> {
     // TODO DTO
     const notification = await this.database.notification.findUnique({
       where: { id },
@@ -212,7 +214,7 @@ export class NotificationService {
     return notification;
   }
 
-  async getUserUnreadNotificationCount(userId: number): Promise<number> {
+  async getUserUnreadNotificationCount(userId: string): Promise<number> {
     const unreadCount = await this.database.notification.count({
       where: { userId, read: false },
     });
@@ -222,7 +224,7 @@ export class NotificationService {
 
   // Mark notification as read/unread
   async updateNotification(
-    id: number,
+    id: string,
     updateNotificationDto: UpdateNotificationDto,
   ): Promise<Notification> {
     const notification = await this.database.notification.update({
@@ -237,7 +239,7 @@ export class NotificationService {
     return notification;
   }
 
-  async markAllAsRead(userId: number): Promise<void> {
+  async markAllAsRead(userId: string): Promise<void> {
     await this.database.notification.updateMany({
       where: {
         userId,
@@ -252,7 +254,7 @@ export class NotificationService {
   }
 
   // Get unread notification count
-  async getUnreadCount(userId: number): Promise<number> {
+  async getUnreadCount(userId: string): Promise<number> {
     return this.database.notification.count({
       where: {
         userId,
