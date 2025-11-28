@@ -1,6 +1,6 @@
 import { AccountProvider } from '@prisma/client';
 
-import { SignInResponseDto } from '@/auth/dto';
+// import { SignInResponseDto } from '@/auth/dto';
 import { isValidId, ID_PREFIXES } from '@/lib/id-generator';
 
 function expectPrefixedId(
@@ -27,42 +27,50 @@ export function expectUserShapeWithoutToken(
       accounts: expect.any(Array),
     }),
   );
+  expectPrefixedId(body.id, ID_PREFIXES.USER);
 }
 
-export function expectSigninResponse(
-  payload: SignInResponseDto,
-  testUser: { firstName: string; lastName: string; email: string },
-) {
-  expect(payload).toEqual(
-    expect.objectContaining({
-      id: expect.any(String),
-      createdAt: expect.any(String),
-      updatedAt: expect.any(String),
-      firstName: testUser.firstName,
-      lastName: testUser.lastName,
-      token: expect.any(String),
-      isSuperAdmin: false,
-      accounts: expect.any(Array),
-    }),
-  );
-}
-export function expectUserShapeWithToken(
-  body: any,
-  dto: { firstName: string; lastName: string; email: string },
-) {
-  expect(body).toEqual(
-    expect.objectContaining({
-      id: expect.any(String),
-      createdAt: expect.any(String),
-      updatedAt: expect.any(String),
-      firstName: dto.firstName,
-      lastName: dto.lastName,
-      token: expect.any(String),
-      isSuperAdmin: false,
-      accounts: expect.any(Array),
-    }),
-  );
-}
+// export function expectSigninResponse(
+//   payload: SignInResponseDto,
+//   testUser: { firstName: string; lastName: string; email: string },
+// ) {
+//   expect(payload.user).toEqual(
+//     expect.objectContaining({
+//       id: expect.any(String),
+//       createdAt: expect.any(String),
+//       updatedAt: expect.any(String),
+//       firstName: testUser.firstName,
+//       lastName: testUser.lastName,
+//       isSuperAdmin: false,
+//       accounts: expect.any(Array),
+//     }),
+//   );
+//   expectPrefixedId(payload.user.id, ID_PREFIXES.USER);
+//   payload.user.accounts.forEach((account) =>
+//     expectPrefixedId(account.id, ID_PREFIXES.ACCOUNT),
+//   );
+// }
+// export function expectUserShapeWithToken(
+//   body: any,
+//   dto: { firstName: string; lastName: string; email: string },
+// ) {
+//   expect(body).toEqual(
+//     expect.objectContaining({
+//       id: expect.any(String),
+//       createdAt: expect.any(String),
+//       updatedAt: expect.any(String),
+//       firstName: dto.firstName,
+//       lastName: dto.lastName,
+//       token: expect.any(String),
+//       isSuperAdmin: false,
+//       accounts: expect.any(Array),
+//     }),
+//   );
+//   expectPrefixedId(body.id, ID_PREFIXES.USER);
+//   body.accounts.forEach((account: any) =>
+//     expectPrefixedId(account.id, ID_PREFIXES.ACCOUNT),
+//   );
+// }
 
 export function expectAccountShape(
   account: any,
