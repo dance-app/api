@@ -33,7 +33,7 @@ export const SUCCESS_MESSAGES = {
   PASSWORD_RESET_EMAIL_SENT: 'password-reset-email-sent',
   EMAIL_VERIFIED_SUCCESS: 'email-verified-success',
   PASSWORD_CHANGED_SUCCESS: 'password-changed-success',
-};
+} as const;
 
 export const ERROR_MESSAGES = {
   MIN_8_CHARACTERS: 'min-8-characters',
