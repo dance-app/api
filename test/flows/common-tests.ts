@@ -25,9 +25,10 @@ export async function signInTest(
     })
     .expect(200)
     .expect((res) => {
-      expect(res.body.success).toBe(true);
+      expect(res.body.data).toBeDefined();
       expect(res.body.data.accessToken).toBeDefined();
       expect(res.body.data.refreshToken).toBeDefined();
+      expect(res.body.error).toBeNull();
     });
   return {
     accessToken: response.body.data.accessToken,

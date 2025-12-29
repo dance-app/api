@@ -1,10 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Account, AccountProvider, User } from '@prisma/client';
-import * as argon from 'argon2';
+import { User } from '@prisma/client';
 
-import { UpdateUserDto } from './dto';
+import { UpdateUserDto, UserResponseDto, SafeAccountDto } from './dto';
+import { UserWithAccount } from './user.types';
 
 import { DatabaseService } from '@/database/database.service';
+import { ERROR_MESSAGES } from '@/lib/constants';
 import { PaginationDto } from '@/pagination/dto';
 import { PaginatedResponseDto } from '@/pagination/dto';
 import { PaginationService } from '@/pagination/pagination.service';
@@ -16,24 +17,72 @@ export class UserService {
     private pagination: PaginationService,
   ) {}
 
+  /**
+   * Transform a User to UserResponseDto
+   * Excludes sensitive data like passwords
+   */
+  toDto(
+    user: User | UserWithAccount,
+    includeAccounts = false,
+  ): UserResponseDto {
+    const dto: UserResponseDto = {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      isSuperAdmin: user.isSuperAdmin,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+
+    if (includeAccounts && 'accounts' in user && user.accounts) {
+      dto.accounts = user.accounts.map(
+        (account): SafeAccountDto => ({
+          id: account.id,
+          email: account.email,
+          provider: account.provider,
+          isEmailVerified: account.isEmailVerified,
+          createdAt: account.createdAt,
+          updatedAt: account.updatedAt,
+          // NEVER include password
+        }),
+      );
+    }
+
+    return dto;
+  }
+
+  /**
+   * Transform array of Users to UserResponseDto[]
+   */
+  toDtoList(users: User[] | UserWithAccount[]): UserResponseDto[] {
+    return users.map((user) => this.toDto(user, false));
+  }
+
   async readAll(
     paginationOptions: PaginationDto,
-  ): Promise<PaginatedResponseDto<User>> {
-    const userCount = await this.database.user.count();
+  ): Promise<PaginatedResponseDto<UserResponseDto>> {
+    const userCount = await this.database.user.count({
+      where: { deletedAt: null },
+    });
+
     const users = await this.database.user.findMany({
+      where: { deletedAt: null },
       ...this.pagination.extractPaginationOptions(paginationOptions),
     });
 
     return this.pagination.createPaginatedResponse(
-      users,
+      this.toDtoList(users),
       userCount,
       paginationOptions,
     );
   }
 
-  async findById(userId: User['id'], includeAccounts: boolean = false) {
+  async findById(
+    userId: User['id'],
+    includeAccounts = false,
+  ): Promise<User | UserWithAccount | null> {
     const user = await this.database.user.findFirst({
-      where: { id: userId },
+      where: { id: userId, deletedAt: null },
       include: {
         accounts: includeAccounts,
       },
@@ -42,62 +91,24 @@ export class UserService {
     return user;
   }
 
-  async getById(userId: User['id'], includeAccounts: boolean = false) {
+  async getById(
+    userId: User['id'],
+    includeAccounts = false,
+  ): Promise<UserResponseDto> {
     const user = await this.findById(userId, includeAccounts);
-    if (!!user) {
-      throw new NotFoundException('User not found');
+    if (!user) {
+      throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
     }
-    return {
-      data: user,
-    };
+    return this.toDto(user, includeAccounts);
   }
 
-  async getUserById(userId: User['id']) {
-    const user = await this.database.user.findFirst({
-      where: { id: userId },
-    });
-
-    return {
-      data: user,
-    };
-  }
-
-  /*async create(data: CreateUserDto) {
-    let emailToken = null;
-    if (!data.isVerified) {
-      const expiredAt = new Date();
-      expiredAt.setHours(expiredAt.getHours() + 24);
-      emailToken = {
-        create: {
-          expiresAt: expiredAt,
-          token: uuid.uuid4(),
-        }
-      };
+  async update(id: string, data: UpdateUserDto): Promise<UserResponseDto> {
+    // Check if user exists
+    const existingUser = await this.findById(id);
+    if (!existingUser) {
+      throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
     }
-    const newUser = await this.database.user.create({
-      data: {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        isSuperAdmin: data.isSuperAdmin || false,
-        accounts: {
-          create: {
-            provider: AccountProvider.LOCAL,
-            email: data.email,
-            password: await argon.hash(data.password),
-            isEmailVerified: data.isVerified || false,
-            emailToken: emailToken,
-          },
-        },
-      },
-      include: {
-        accounts: true,
-      },
-    });
 
-    return newUser;
-  }*/
-
-  async update(id: string, data: UpdateUserDto) {
     const updatedUser = await this.database.user.update({
       where: { id },
       data: {
@@ -107,33 +118,7 @@ export class UserService {
       include: { accounts: true },
     });
 
-    let updatedAccount: Account | undefined;
-
-    if (data.password || data.isVerified) {
-      const updatedUserLocalAccount = updatedUser.accounts.find(
-        (a) => a.provider === AccountProvider.LOCAL,
-      );
-      if (!updatedUserLocalAccount) throw new Error('User account not found');
-
-      const newPassword = data.password
-        ? await argon.hash(data.password)
-        : null;
-
-      updatedAccount = await this.database.account.update({
-        where: {
-          id: updatedUserLocalAccount.id,
-        },
-        data: {
-          ...(newPassword ? { password: newPassword } : {}),
-          ...(data.isVerified ? { isEmailVerified: data.isVerified } : {}),
-        },
-      });
-    }
-
-    return {
-      user: updatedUser,
-      account: updatedAccount,
-    };
+    return this.toDto(updatedUser, true);
   }
 
   async readByEmail(email: string): Promise<User | null> {
@@ -142,17 +127,25 @@ export class UserService {
       include: { user: true },
     });
 
-    return account?.user;
+    return account?.user ?? null;
   }
 
-  async delete(id: string) {
-    const deletedUser = await this.database.user.delete({
-      where: { id },
+  async delete(id: string): Promise<UserResponseDto> {
+    // Check if user exists and is not already deleted
+    const user = await this.database.user.findFirst({
+      where: { id, deletedAt: null },
     });
 
-    return {
-      message: 'User deleted',
-      data: deletedUser,
-    };
+    if (!user) {
+      throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
+    }
+
+    // Soft delete the user
+    const deletedUser = await this.database.user.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+
+    return this.toDto(deletedUser);
   }
 }

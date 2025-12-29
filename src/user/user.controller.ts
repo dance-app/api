@@ -4,53 +4,100 @@ import {
   UseGuards,
   Param,
   Delete,
-  ForbiddenException,
+  Patch,
+  Body,
 } from '@nestjs/common';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiResponse as SwaggerApiResponse,
+  ApiParam,
+} from '@nestjs/swagger';
 
+import { UpdateUserDto, UserResponseDto } from './dto';
 import { UserService } from './user.service';
-import { UserWithAccount } from './user.types';
 
-import { GetAuthUser } from '@/auth/decorator';
 import { JwtGuard } from '@/auth/guard';
 import { SuperAdminGuard } from '@/auth/guard/super-admin.guard';
+import { ApiResponse, buildResponse } from '@/lib/api-response';
 import { GetPagination } from '@/pagination/decorator';
-import { PaginationDto } from '@/pagination/dto';
+import { PaginationDto, PaginatedResponseDto } from '@/pagination/dto';
 
+@ApiTags('Users')
 @ApiBearerAuth()
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard, SuperAdminGuard)
 @Controller('users')
 export class UserController {
   constructor(private userService: UserService) {}
 
-  @Get('me')
-  getMe(@GetAuthUser() user: UserWithAccount) {
-    return user;
-  }
-
   @Get('')
-  @UseGuards(SuperAdminGuard)
-  getUsers(@GetPagination() paginationOptions: PaginationDto) {
-    return this.userService.readAll(paginationOptions);
+  @ApiOperation({ summary: 'Get all users with pagination (super admin only)' })
+  @SwaggerApiResponse({
+    status: 200,
+    description: 'List of users retrieved successfully',
+  })
+  @SwaggerApiResponse({
+    status: 404,
+    description: 'Not found - Super admin access required',
+  })
+  async getUsers(
+    @GetPagination() paginationOptions: PaginationDto,
+  ): Promise<ApiResponse<PaginatedResponseDto<UserResponseDto>>> {
+    const result = await this.userService.readAll(paginationOptions);
+    return buildResponse(result);
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get user by ID (super admin only)' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @SwaggerApiResponse({
+    status: 200,
+    description: 'User retrieved successfully',
+  })
+  @SwaggerApiResponse({
+    status: 404,
+    description: 'User not found or super admin access required',
+  })
   async getUser(
-    @GetAuthUser() user: UserWithAccount,
     @Param('id') id: string,
-  ): Promise<UserWithAccount> {
-    if (user.id !== id && !user.isSuperAdmin) throw new ForbiddenException();
-    // TODO: what other users can see about other users?
-    return await this.userService.findById(id, true);
+  ): Promise<ApiResponse<UserResponseDto>> {
+    const result = await this.userService.getById(id, true);
+    return buildResponse(result);
   }
 
-  // @Patch(':id')
-  // updateUser(@Param('id') id: string, @Body() data: UserDto) {
-  //   return this.userService.update(id, data);
-  // }
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update user by ID (super admin only)' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @SwaggerApiResponse({
+    status: 200,
+    description: 'User updated successfully',
+  })
+  @SwaggerApiResponse({
+    status: 404,
+    description: 'User not found or super admin access required',
+  })
+  async updateUser(
+    @Param('id') id: string,
+    @Body() data: UpdateUserDto,
+  ): Promise<ApiResponse<UserResponseDto>> {
+    const result = await this.userService.update(id, data);
+    return buildResponse(result);
+  }
 
   @Delete(':id')
-  delete(@Param('id') id: string) {
-    return this.userService.delete(id);
+  @ApiOperation({ summary: 'Soft delete user by ID (super admin only)' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @SwaggerApiResponse({
+    status: 200,
+    description: 'User deleted successfully',
+  })
+  @SwaggerApiResponse({
+    status: 404,
+    description: 'User not found or super admin access required',
+  })
+  async delete(@Param('id') id: string): Promise<ApiResponse<UserResponseDto>> {
+    const result = await this.userService.delete(id);
+    return buildResponse(result);
   }
 }
