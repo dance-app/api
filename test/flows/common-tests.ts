@@ -517,16 +517,22 @@ export async function getWorkspaceDetailsTest(
 
   expect(response.body).toEqual(
     expect.objectContaining({
-      id: expectedWorkspace.id,
-      name: expectedWorkspace.name,
-      slug: expectedWorkspace.slug,
-      createdAt: expectedWorkspace.createdAt.toISOString(),
-      updatedAt: expectedWorkspace.updatedAt.toISOString(),
-      configuration: expect.any(Object),
+      data: expect.objectContaining({
+        id: expectedWorkspace.id,
+        name: expectedWorkspace.name,
+        slug: expectedWorkspace.slug,
+        createdAt: expectedWorkspace.createdAt.toISOString(),
+        updatedAt: expectedWorkspace.updatedAt.toISOString(),
+        configuration: expect.objectContaining({
+          id: expect.any(String),
+          weekStart: expect.any(String),
+        }),
+      }),
+      error: null,
     }),
   );
 
-  return response.body;
+  return response.body.data;
 }
 
 export async function updateWorkspaceTest(

@@ -64,12 +64,12 @@ export class WorkspaceService {
     });
 
     return {
+      data,
       meta: {
         totalCount,
         count: data.length,
         ...paginationOptions,
       },
-      data,
     };
   }
 
@@ -97,9 +97,7 @@ export class WorkspaceService {
         },
       },
     });
-    return {
-      data: result,
-    };
+    return result;
   }
 
   private generateSlug(name: string): string {
@@ -159,6 +157,9 @@ export class WorkspaceService {
             },
           },
         },
+        include: {
+          configuration: true,
+        },
       });
 
       // Add specified user as owner
@@ -180,18 +181,15 @@ export class WorkspaceService {
     return await this.createWithOwner(payload, ownerUserId);
   }
 
-  async update(id: string, payload: Pick<Workspace, 'name'>) {
+  async update(id: string, payload: { name?: string }) {
     const data = await this.database.workspace.update({
       where: { id },
       data: {
-        name: payload.name,
+        ...(payload.name !== undefined && { name: payload.name }),
       },
     });
 
-    return {
-      message: 'User updated',
-      data,
-    };
+    return data;
   }
 
   async delete(id: string) {
@@ -216,10 +214,7 @@ export class WorkspaceService {
       },
     });
 
-    return {
-      message: 'Workspace deleted',
-      data,
-    };
+    return data;
   }
 
   /**
@@ -244,7 +239,9 @@ export class WorkspaceService {
    * @throws NotFoundException if workspace not found
    */
   async getWorkspaceBySlug(slug: string) {
-    const workspace = await this.findWorkspaceBySlug(slug);
+    const workspace = await this.findWorkspaceBySlug(slug, {
+      configuration: true,
+    });
 
     if (!workspace) {
       throw new NotFoundException(`Workspace with slug "${slug}" not found`);
@@ -278,5 +275,39 @@ export class WorkspaceService {
       },
     });
     return !!result;
+  }
+
+  async updateConfiguration(
+    slug: string,
+    configData: { weekStart: WeekStart },
+  ) {
+    // Fetch workspace by slug with configuration
+    const workspace = await this.findWorkspaceBySlug(slug, {
+      configuration: true,
+    });
+
+    if (!workspace) {
+      throw new NotFoundException(`Workspace with slug "${slug}" not found`);
+    }
+
+    // Update or create configuration
+    const updatedConfig = await this.database.workspaceConfig.upsert({
+      where: {
+        workspaceId: workspace.id,
+      },
+      update: {
+        weekStart: configData.weekStart,
+      },
+      create: {
+        id: generateId(ID_PREFIXES.WORKSPACE_CONFIG),
+        workspaceId: workspace.id,
+        weekStart: configData.weekStart,
+      },
+    });
+
+    return {
+      id: updatedConfig.id,
+      weekStart: updatedConfig.weekStart,
+    };
   }
 }
