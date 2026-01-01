@@ -312,6 +312,18 @@ handleUserCreated(payload: UserCreatedEvent) {
 4. **Verify no regressions** - ensure all tests pass
 5. **Request user review** before considering module "validated"
 
+## Git Commit Guidelines
+
+### Commit Messages
+- **NEVER include Claude Code attribution or co-author tags** in commit messages
+- **NEVER include AI-generated footers** like "🤖 Generated with Claude Code" or similar
+- Keep commit messages clean and professional
+- Focus on what changed and why, not on the tools used to make the change
+- Use conventional commit format when appropriate: `type: description`
+  - Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`
+  - Example: `feat: add email verification flow`
+  - Example: `fix: resolve race condition in workspace creation`
+
 ## Database and Prisma
 
 ### Schema Changes
