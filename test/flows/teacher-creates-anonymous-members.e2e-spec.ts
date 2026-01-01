@@ -167,7 +167,7 @@ describe.skip('Teacher creates anonymous members in workspace', () => {
         const addMemberPayload = {
           memberName: memberData.name,
           roles: memberData.roles,
-          preferedDanceRole: memberData.preferedDancingRole,
+          preferredDanceRole: memberData.preferedDancingRole,
           level: memberData.level,
           // No email or userId - this creates an anonymous member
         };
@@ -187,7 +187,7 @@ describe.skip('Teacher creates anonymous members in workspace', () => {
             user: null, // Should be null for anonymous members
             workspaceId: testState.workspace!.id,
             level: memberData.level ?? null,
-            preferedDanceRole: memberData.preferedDancingRole ?? null,
+            preferredDanceRole: memberData.preferedDancingRole ?? null,
           }),
         );
 
@@ -200,7 +200,7 @@ describe.skip('Teacher creates anonymous members in workspace', () => {
         expect(dbMember).toBeTruthy();
         expect(dbMember!.name).toBe(memberData.name);
         expect(dbMember!.level).toBe(memberData.level ?? null);
-        expect(dbMember!.preferedDanceRole).toBe(
+        expect(dbMember!.preferredDanceRole).toBe(
           memberData.preferedDancingRole ?? null,
         );
         expect(dbMember!.roles).toEqual(
@@ -235,7 +235,7 @@ describe.skip('Teacher creates anonymous members in workspace', () => {
           );
           expect(foundMember.user).toBeNull();
           expect(foundMember.workspaceId).toBe(testState.workspace!.id);
-          expect(foundMember.preferedDanceRole).toBe(
+          expect(foundMember.preferredDanceRole).toBe(
             expectedMember.preferedDancingRole ?? null,
           );
           expect(foundMember.level).toBe(expectedMember.level ?? null);
@@ -274,7 +274,7 @@ describe.skip('Teacher creates anonymous members in workspace', () => {
         );
 
         for (const member of response.body.data) {
-          expect(member.preferedDanceRole).toBe(DanceRole.FOLLOWER);
+          expect(member.preferredDanceRole).toBe(DanceRole.FOLLOWER);
           expect(member.user).toBeNull(); // All should be anonymous
         }
 

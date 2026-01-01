@@ -630,7 +630,7 @@ export async function getMemberProfileTest(
     userId: string;
     workspaceId: string;
     level?: number | null;
-    preferedDanceRole?: DanceRole | null;
+    preferredDanceRole?: DanceRole | null;
   },
 ) {
   const response = await request(app.getHttpServer())
@@ -647,7 +647,7 @@ export async function getMemberProfileTest(
       userId: expectedMember.userId,
       workspaceId: expectedMember.workspaceId,
       level: expectedMember.level,
-      preferedDanceRole: expectedMember.preferedDanceRole,
+      preferredDanceRole: expectedMember.preferredDanceRole,
     }),
   );
 

@@ -9,6 +9,6 @@ export class MemberResponseDto {
   roles: WorkspaceRole[];
   level: number | null;
   levelName: string | null;
-  preferedDanceRole: DanceRole | null;
+  preferredDanceRole: DanceRole | null;
   workspaceId: string;
 }

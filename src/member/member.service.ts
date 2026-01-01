@@ -93,7 +93,7 @@ export class MemberService {
       roles: member.roles,
       level: member.level,
       levelName: getLevelName(member.level),
-      preferedDanceRole: member.preferedDanceRole,
+      preferredDanceRole: member.preferredDanceRole,
       workspaceId: member.workspaceId,
     };
   }
@@ -112,7 +112,7 @@ export class MemberService {
     workspaceId: string,
     queryParams: SearchMembersDto,
     paginationOptions: PaginationDto,
-  ): Promise<PaginatedResponseDto<MemberResponseDto>> {
+  ) {
     const where: Prisma.MemberWhereInput = {
       workspaceId,
     };
@@ -140,7 +140,7 @@ export class MemberService {
 
     // Add roles filter if provided
     if (queryParams.roles && queryParams.roles.length > 0) {
-      where.preferedDanceRole = {
+      where.preferredDanceRole = {
         in: queryParams.roles!,
       };
     }
@@ -190,18 +190,31 @@ export class MemberService {
       ...this.pagination.extractPaginationOptions(paginationOptions),
     });
 
-    // Map numeric levels to their string representations in the response
-    return this.pagination.createPaginatedResponse(
-      members.map((member) => this.mapToMemberResponseDto(member)),
-      count,
-      paginationOptions,
+    // Map to DTOs and return raw data with meta
+    const mappedMembers = members.map((member) =>
+      this.mapToMemberResponseDto(member),
     );
+
+    return {
+      data: mappedMembers,
+      meta: {
+        totalCount: count,
+        count: mappedMembers.length,
+        page:
+          Math.floor(
+            (paginationOptions.offset ?? 0) / (paginationOptions.limit ?? 10),
+          ) + 1,
+        pages: Math.ceil(count / (paginationOptions.limit ?? 10)),
+        limit: paginationOptions.limit ?? 10,
+        offset: paginationOptions.offset ?? 0,
+      },
+    };
   }
 
   async getAllWorkspaceMembers(
     workspaceId: string,
     paginationOptions: PaginationDto,
-  ): Promise<PaginatedResponseDto<MemberResponseDto>> {
+  ) {
     return await this.getWorkspaceMembers(workspaceId, {}, paginationOptions);
   }
 
@@ -232,7 +245,7 @@ export class MemberService {
         roles: {
           set: data.roles,
         },
-        preferedDanceRole: data.preferedDanceRole,
+        preferredDanceRole: data.preferredDanceRole,
         level: data.level,
       },
     });
@@ -252,7 +265,7 @@ export class MemberService {
 
   async findMemberByUserId(userId: string, workspaceId: string) {
     const member = await this.getMemberByUserId(userId, workspaceId);
-    if (!!member) {
+    if (!member) {
       throw new NotFoundException('Member does not exist.');
     }
     return member;
@@ -269,33 +282,30 @@ export class MemberService {
 
   async findMember(memberId: string) {
     const member = await this.getMember(memberId);
-    if (!!member) {
+    if (!member) {
       throw new NotFoundException('Member does not exist.');
     }
     return member;
   }
 
   async delete(memberId: string) {
-    const deletedMember = await this.database.member.delete({
-      where: {
-        id: memberId,
-      },
-    });
-
-    if (!!deletedMember) throw new NotFoundException('Member does not exist');
+    try {
+      await this.database.member.delete({
+        where: {
+          id: memberId,
+        },
+      });
+    } catch (error) {
+      throw new NotFoundException('Member does not exist');
+    }
   }
   async deleteByUserId(userId: string, workspaceId: string) {
     const memberToDelete = await this.findMemberByUserId(userId, workspaceId);
 
-    const deletedMember = await this.database.member.delete({
+    await this.database.member.delete({
       where: {
         id: memberToDelete.id,
       },
     });
-
-    return {
-      message: 'Member deleted',
-      data: deletedMember,
-    };
   }
 }

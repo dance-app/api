@@ -10,21 +10,19 @@ import {
   HttpCode,
   HttpStatus,
   UnauthorizedException,
-  Req,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { Workspace, WorkspaceRole } from '@prisma/client';
-import { Request } from 'express';
 
 import { AddMemberDto } from './dto/add-member.dto';
-import { MemberResponseDto } from './dto/member-response.dto';
 import { SearchMembersDto } from './dto/search-member.dto';
 import { MemberService } from './member.service';
 
 import { GetAuthUser } from '@/auth/decorator';
 import { JwtGuard } from '@/auth/guard';
+import { buildResponse } from '@/lib/api-response';
 import { GetPagination } from '@/pagination/decorator';
-import { PaginatedResponseDto, PaginationDto } from '@/pagination/dto';
+import { PaginationDto } from '@/pagination/dto';
 import { UserWithAccount } from '@/user/user.types';
 import { WorkspaceBySlug } from '@/workspace/decorator/workspace.decorator';
 import {
@@ -50,14 +48,14 @@ export class MemberController {
   async getMembers(
     @WorkspaceBySlug() workspace: Workspace,
     @Query() queryParams: SearchMembersDto,
-    @Req() req: Request,
     @GetPagination() paginationOptions: PaginationDto,
-  ): Promise<PaginatedResponseDto<MemberResponseDto>> {
-    return await this.memberService.getWorkspaceMembers(
+  ) {
+    const result = await this.memberService.getWorkspaceMembers(
       workspace.id,
       queryParams,
       paginationOptions,
     );
+    return buildResponse(result.data, result.meta);
   }
 
   @Post()
@@ -66,14 +64,23 @@ export class MemberController {
     @GetAuthUser() user: UserWithAccount,
     @WorkspaceBySlug() workspace: Workspace,
     @Body() addMemberDto: AddMemberDto,
-  ): Promise<MemberResponseDto> {
-    return this.memberService.create(user, addMemberDto, workspace);
+  ) {
+    const member = await this.memberService.create(
+      user,
+      addMemberDto,
+      workspace,
+    );
+    return buildResponse(member);
   }
 
   @Get(':id')
   @RequireWorkspaceRoles(WorkspaceRole.OWNER, WorkspaceRole.TEACHER)
   async readById(@Param('id') id: string) {
-    return await this.memberService.getMember(id);
+    const member = await this.memberService.getMember(id);
+    const memberDto = member
+      ? this.memberService.mapToMemberResponseDto(member)
+      : null;
+    return buildResponse(memberDto);
   }
 
   // @Patch(':id')

@@ -39,6 +39,7 @@ CREATE TABLE "users" (
     "id" TEXT NOT NULL,
     "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ(3) NOT NULL,
+    "deletedAt" TIMESTAMPTZ(3),
     "firstName" TEXT,
     "lastName" TEXT,
     "token" TEXT,
@@ -127,7 +128,7 @@ CREATE TABLE "members" (
     "workspaceId" TEXT NOT NULL,
     "roles" "WorkspaceRole"[],
     "level" INTEGER,
-    "preferedDanceRole" "DanceRole",
+    "preferredDanceRole" "DanceRole",
 
     CONSTRAINT "members_pkey" PRIMARY KEY ("id")
 );

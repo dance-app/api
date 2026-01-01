@@ -290,7 +290,7 @@ describe.skip('Teacher invites registered user to workspace', () => {
             userId: testState.student!.id,
             workspaceId: testState.workspace!.id,
             level: testState.studentMemberSeat!.level,
-            preferedDanceRole: testState.studentMemberSeat!.preferedDanceRole,
+            preferredDanceRole: testState.studentMemberSeat!.preferredDanceRole,
           }),
         );
 

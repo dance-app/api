@@ -105,9 +105,8 @@ describe('WorkspaceService', () => {
           slug: null,
         }),
       });
-      expect(result.message).toBe('Workspace deleted');
-      expect(result.data.slug).toBeNull();
-      expect(result.data.deletedAt).toBeInstanceOf(Date);
+      expect(result.slug).toBeNull();
+      expect(result.deletedAt).toBeInstanceOf(Date);
     });
 
     it('throws when the workspace is already deleted or missing', async () => {
@@ -223,7 +222,7 @@ describe('WorkspaceService', () => {
 
       expect(database.workspace.findFirst).toHaveBeenCalledWith({
         where: { slug: 'test-workspace', deletedAt: null },
-        include: undefined,
+        include: { configuration: true },
       });
       expect(result).toEqual(
         expect.objectContaining({
@@ -270,8 +269,7 @@ describe('WorkspaceService', () => {
         where: { id: workspaceRecord.id },
         data: { name: 'New Name' },
       });
-      expect(result.message).toBe('User updated');
-      expect(result.data.name).toBe('New Name');
+      expect(result.name).toBe('New Name');
     });
   });
 

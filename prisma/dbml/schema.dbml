@@ -103,7 +103,7 @@ Table members {
   attendances attendees [not null]
   roles WorkspaceRole[] [not null]
   level Int
-  preferedDanceRole DanceRole
+  preferredDanceRole DanceRole
   invitation invitations
 }
 

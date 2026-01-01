@@ -30,7 +30,7 @@ export class AddMemberDto {
   @IsString()
   @IsEnum(DanceRole)
   @IsOptional()
-  preferedDanceRole?: DanceRole = undefined;
+  preferredDanceRole?: DanceRole = undefined;
 
   @IsNumber()
   @IsEnum(DanceLevel)
