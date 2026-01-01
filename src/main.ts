@@ -10,10 +10,23 @@ async function bootstrap() {
 
   await setupSwagger(app);
 
+  const frontendOrigin =
+    process.env.FRONTEND_ORIGIN ?? 'http://localhost:3000';
+
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.useGlobalFilters(new PrismaExceptionFilter());
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
-  app.enableCors();
+  app.enableCors({
+    origin: [frontendOrigin],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+    ],
+  });
   const port = process.env.PORT || 3333;
   await app.listen(port);
   console.log(`🚀 Application is running on: http://localhost:${port}`);
