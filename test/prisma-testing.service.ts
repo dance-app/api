@@ -1,21 +1,21 @@
 import {
   AccountProvider,
-  PrismaClient,
   User,
   WorkspaceRole,
 } from '@prisma/client';
 import * as argon2 from 'argon2';
 
 import { generateId, ID_PREFIXES } from '../src/lib/id-generator';
+import { createPrismaClient } from '../src/lib/prisma-client';
 
 import { DanceLevel } from '@/member/enums/dance-level.enum';
 
 export class PrismaTestingService {
-  client: PrismaClient;
+  client: ReturnType<typeof createPrismaClient>;
   private readonly shouldDisconnect: boolean;
 
-  constructor(client?: PrismaClient) {
-    this.client = client ?? new PrismaClient();
+  constructor(client?: ReturnType<typeof createPrismaClient>) {
+    this.client = client ?? createPrismaClient();
     this.shouldDisconnect = !client;
   }
 

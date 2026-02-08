@@ -1,8 +1,8 @@
-import { PrismaClient } from '@prisma/client';
 import { config } from 'dotenv';
+import { createPrismaClient } from '../src/lib/prisma-client';
 config({ path: '.env.test' });
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 module.exports = async () => {
   // Delete in dependency order

@@ -1,6 +1,5 @@
 import { faker } from '@faker-js/faker';
 import {
-  PrismaClient,
   AccountProvider,
   WeekStart,
   WorkspaceRole,
@@ -17,8 +16,9 @@ import { randomUUID } from 'crypto';
 
 import { MOCK_USER } from '@/lib/constants';
 import { generateId, ID_PREFIXES } from '@/lib/id-generator';
+import { createPrismaClient } from '@/lib/prisma-client';
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 // helper to create a user + local account
 async function createUser(opts: {
