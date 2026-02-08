@@ -702,7 +702,7 @@ describe('Workspace Members CRUD (e2e)', () => {
 
     it('stores phone on member when phone is provided', async () => {
       const payload = {
-        phone: '+15555550101',
+        phone: '+1 415 666 7777',
         memberName: 'Invite By Phone',
         roles: [WorkspaceRole.STUDENT],
       };
@@ -714,19 +714,19 @@ describe('Workspace Members CRUD (e2e)', () => {
         .expect(201);
 
       expect(response.body.data.email).toBeNull();
-      expect(response.body.data.phone).toBe(payload.phone);
+      expect(response.body.data.phone).toBe('+14156667777');
 
       const dbMember = await prismaTesting.client.member.findUnique({
         where: { id: response.body.data.id },
       });
       expect(dbMember?.email).toBeNull();
-      expect(dbMember?.phone).toBe(payload.phone);
+      expect(dbMember?.phone).toBe('+14156667777');
     });
 
     it('stores email and phone on member when both are provided', async () => {
       const payload = {
         email: 'invitee.both@example.com',
-        phone: '+15555550102',
+        phone: '+1 415 666 8888',
         memberName: 'Invite Both',
         roles: [WorkspaceRole.STUDENT],
       };
@@ -738,13 +738,13 @@ describe('Workspace Members CRUD (e2e)', () => {
         .expect(201);
 
       expect(response.body.data.email).toBe(payload.email);
-      expect(response.body.data.phone).toBe(payload.phone);
+      expect(response.body.data.phone).toBe('+14156668888');
 
       const dbMember = await prismaTesting.client.member.findUnique({
         where: { id: response.body.data.id },
       });
       expect(dbMember?.email).toBe(payload.email);
-      expect(dbMember?.phone).toBe(payload.phone);
+      expect(dbMember?.phone).toBe('+14156668888');
     });
 
     it('returns 400 when email is already used by another member', async () => {
@@ -773,7 +773,7 @@ describe('Workspace Members CRUD (e2e)', () => {
 
     it('returns 400 when phone is already used by another member', async () => {
       const payload = {
-        phone: '+15555550103',
+        phone: '+1 415 666 9999',
         memberName: 'Dup Member Phone',
         roles: [WorkspaceRole.STUDENT],
       };
@@ -805,6 +805,22 @@ describe('Workspace Members CRUD (e2e)', () => {
           roles: [WorkspaceRole.STUDENT],
         })
         .expect(400);
+    });
+
+    it('returns 400 for invalid phone format', async () => {
+      const response = await request(app.getHttpServer())
+        .post(`/workspaces/${workspaceSlug}/members`)
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .send({
+          phone: '555-555-0101',
+          memberName: 'Invalid Phone',
+          roles: [WorkspaceRole.STUDENT],
+        })
+        .expect(400);
+
+      expect(response.body.message[0]).toBe(
+        ERROR_MESSAGES.INVALID_PHONE_NUMBER,
+      );
     });
 
     it('returns 400 for invalid roles', async () => {
