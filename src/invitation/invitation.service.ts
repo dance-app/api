@@ -139,9 +139,10 @@ export class InvitationService {
         );
       }
 
-      const inviteeMember = await this.database.member.findUnique({
+      const inviteeMember = await this.database.member.findFirst({
         where: {
           id: memberSeatId,
+          deletedAt: null,
         },
         include: {
           user: {

@@ -37,6 +37,9 @@ export const SUCCESS_MESSAGES = {
 
 export const ERROR_MESSAGES = {
   MIN_8_CHARACTERS: 'min-8-characters',
+  MEMBER_NOT_FOUND: 'member-not-found',
+  USER_ALREADY_MEMBER: 'user-already-member',
+  WORKSPACE_NOT_FOUND: 'workspace-not-found',
   EMAIL_ALREADY_EXISTS: 'email-already-exists',
   PASSWORD_REQUIRED_FOR_EMAIL_SIGN_UP: 'password-required-for-email-sign-up',
   INVALID_REFRESH_TOKEN: 'invalid-refresh-token',
@@ -52,5 +55,5 @@ export const ERROR_MESSAGES = {
   ACCOUNT_NOT_LOCAL: 'account-not-local',
   CURRENT_PASSWORD_INCORRECT: 'current-password-incorrect',
   USER_NOT_FOUND: 'user-not-found',
-  DANCE_ROLE_FILTER_INVALID: 'invalid-dance-role-filter',
+  DANCE_ROLE_FILTER_INVALID: 'dance-role-filter-invalid',
 } as const;

@@ -270,6 +270,7 @@ export class WorkspaceService {
           some: {
             userId: user.id,
             workspaceId: workspace.id,
+            deletedAt: null,
           },
         },
       },

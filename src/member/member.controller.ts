@@ -97,7 +97,7 @@ export class MemberController {
     @Param('memberId') memberId: string,
   ): Promise<void> {
     // TODO: add interceptors
-    const memberToDelete = await this.memberService.getMember(memberId);
+    const memberToDelete = await this.memberService.findMember(memberId);
     const currentMember = await this.memberService.getMemberByUserId(
       user.id,
       workspace.id,

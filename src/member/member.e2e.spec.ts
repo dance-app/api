@@ -731,8 +731,8 @@ describe('Workspace Members CRUD (e2e)', () => {
     });
   });
 
-  describe.skip('GET /workspaces/:slug/members/:id', () => {
-    it('returns member details (user omitted in current response)', async () => {
+  describe('GET /workspaces/:slug/members/:id', () => {
+    it('returns member details with full payload shape', async () => {
       const response = await request(app.getHttpServer())
         .get(`/workspaces/${workspaceSlug}/members/${teacherMemberId}`)
         .auth(ownerAccessToken, { type: 'bearer' })
@@ -742,7 +742,11 @@ describe('Workspace Members CRUD (e2e)', () => {
         expect.objectContaining({
           data: expect.objectContaining({
             id: teacherMemberId,
+            name: null,
             roles: [WorkspaceRole.TEACHER],
+            level: null,
+            levelName: null,
+            preferredDanceRole: null,
             workspaceId,
             user: null,
           }),
@@ -766,19 +770,53 @@ describe('Workspace Members CRUD (e2e)', () => {
         }),
       );
     });
+
+    it('returns null data when member id format is invalid', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/workspaces/${workspaceSlug}/members/not-a-valid-id`)
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .expect(200);
+
+      expect(response.body).toEqual(
+        expect.objectContaining({
+          data: null,
+          error: null,
+        }),
+      );
+    });
   });
 
-  describe.skip('DELETE /workspaces/:slug/members/:memberId', () => {
+  describe('DELETE /workspaces/:slug/members/:memberId', () => {
     it('allows owner to delete non-owner member', async () => {
+      const deletableMember = await prismaTesting.client.member.create({
+        data: {
+          id: generateId(ID_PREFIXES.MEMBER),
+          createdById: ownerId,
+          workspaceId,
+          name: 'Delete Me',
+          roles: [WorkspaceRole.STUDENT],
+        },
+      });
+
       await request(app.getHttpServer())
-        .delete(`/workspaces/${workspaceSlug}/members/${teacherMemberId}`)
+        .delete(`/workspaces/${workspaceSlug}/members/${deletableMember.id}`)
         .auth(ownerAccessToken, { type: 'bearer' })
         .expect(204);
 
       const dbMember = await prismaTesting.client.member.findUnique({
-        where: { id: teacherMemberId },
+        where: { id: deletableMember.id },
       });
-      expect(dbMember).toBeNull();
+      expect(dbMember).toBeTruthy();
+      expect(dbMember?.deletedAt).toBeInstanceOf(Date);
+
+      const listResponse = await request(app.getHttpServer())
+        .get(`/workspaces/${workspaceSlug}/members`)
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .expect(200);
+      const deletedInList = listResponse.body.data.find(
+        (member: any) => member.id === deletableMember.id,
+      );
+      expect(deletedInList).toBeUndefined();
     });
 
     it('rejects teacher deleting owner', async () => {
@@ -793,11 +831,45 @@ describe('Workspace Members CRUD (e2e)', () => {
       expect(dbOwner).toBeTruthy();
     });
 
+    it('returns 403 when student tries to delete any member', async () => {
+      await request(app.getHttpServer())
+        .delete(`/workspaces/${workspaceSlug}/members/${teacherMemberId}`)
+        .auth(studentAccessToken, { type: 'bearer' })
+        .expect(403);
+
+      const dbMember = await prismaTesting.client.member.findUnique({
+        where: { id: teacherMemberId },
+      });
+      expect(dbMember).toBeTruthy();
+    });
+
     it('returns 404 when deleting non-existent member', async () => {
       await request(app.getHttpServer())
         .delete(
           `/workspaces/${workspaceSlug}/members/${ID_PREFIXES.MEMBER}_00000000-0000-0000-0000-000000000000`,
         )
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .expect(404);
+    });
+
+    it('returns 404 when deleting already deleted member', async () => {
+      const deletableMember = await prismaTesting.client.member.create({
+        data: {
+          id: generateId(ID_PREFIXES.MEMBER),
+          createdById: ownerId,
+          workspaceId,
+          name: 'Delete Twice',
+          roles: [WorkspaceRole.STUDENT],
+        },
+      });
+
+      await request(app.getHttpServer())
+        .delete(`/workspaces/${workspaceSlug}/members/${deletableMember.id}`)
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .expect(204);
+
+      await request(app.getHttpServer())
+        .delete(`/workspaces/${workspaceSlug}/members/${deletableMember.id}`)
         .auth(ownerAccessToken, { type: 'bearer' })
         .expect(404);
     });

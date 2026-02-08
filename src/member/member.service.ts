@@ -16,6 +16,7 @@ import { MemberWithUser } from './member.types';
 import { generateId, ID_PREFIXES } from '../lib/id-generator';
 
 import { DatabaseService } from '@/database/database.service';
+import { ERROR_MESSAGES } from '@/lib/constants';
 import { PaginationDto } from '@/pagination/dto';
 import { PaginationService } from '@/pagination/pagination.service';
 import { WorkspaceService } from '@/workspace/workspace.service';
@@ -73,6 +74,7 @@ export class MemberService {
       where: {
         workspaceId,
         userId,
+        deletedAt: null,
       },
       select: { roles: true },
     });
@@ -104,7 +106,7 @@ export class MemberService {
     });
 
     if (!workspace) {
-      throw new NotFoundException(`Workspace with slug ${slug} not found`);
+      throw new NotFoundException(ERROR_MESSAGES.WORKSPACE_NOT_FOUND);
     }
     return workspace;
   }
@@ -115,6 +117,7 @@ export class MemberService {
   ) {
     const where: Prisma.MemberWhereInput = {
       workspaceId,
+      deletedAt: null,
     };
     // Add search filter if provided (member name, user names, or account email)
     const searchTerm = queryParams.search?.trim();
@@ -218,9 +221,7 @@ export class MemberService {
       });
 
       if (existingMember) {
-        throw new BadRequestException(
-          'User is already a member of this workspace',
-        );
+        throw new BadRequestException(ERROR_MESSAGES.USER_ALREADY_MEMBER);
       }
     }
     const memberSeat = await this.database.member.create({
@@ -247,6 +248,7 @@ export class MemberService {
       where: {
         userId: userId,
         workspaceId: workspaceId,
+        deletedAt: null,
       },
     });
     return member;
@@ -255,7 +257,7 @@ export class MemberService {
   async findMemberByUserId(userId: string, workspaceId: string) {
     const member = await this.getMemberByUserId(userId, workspaceId);
     if (!member) {
-      throw new NotFoundException('Member does not exist.');
+      throw new NotFoundException(ERROR_MESSAGES.MEMBER_NOT_FOUND);
     }
     return member;
   }
@@ -264,6 +266,7 @@ export class MemberService {
     const member = await this.database.member.findFirst({
       where: {
         id: memberId,
+        deletedAt: null,
       },
     });
     return member;
@@ -272,29 +275,38 @@ export class MemberService {
   async findMember(memberId: string) {
     const member = await this.getMember(memberId);
     if (!member) {
-      throw new NotFoundException('Member does not exist.');
+      throw new NotFoundException(ERROR_MESSAGES.MEMBER_NOT_FOUND);
     }
     return member;
   }
 
   async delete(memberId: string) {
-    try {
-      await this.database.member.delete({
-        where: {
-          id: memberId,
-        },
-      });
-    } catch (error) {
-      throw new NotFoundException('Member does not exist');
+    const result = await this.database.member.updateMany({
+      where: {
+        id: memberId,
+        deletedAt: null,
+      },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+    if (result.count === 0) {
+      throw new NotFoundException(ERROR_MESSAGES.MEMBER_NOT_FOUND);
     }
   }
   async deleteByUserId(userId: string, workspaceId: string) {
-    const memberToDelete = await this.findMemberByUserId(userId, workspaceId);
-
-    await this.database.member.delete({
+    const result = await this.database.member.updateMany({
       where: {
-        id: memberToDelete.id,
+        userId,
+        workspaceId,
+        deletedAt: null,
+      },
+      data: {
+        deletedAt: new Date(),
       },
     });
+    if (result.count === 0) {
+      throw new NotFoundException(ERROR_MESSAGES.MEMBER_NOT_FOUND);
+    }
   }
 }
