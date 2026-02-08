@@ -289,6 +289,8 @@ describe('Workspace Members CRUD (e2e)', () => {
       const teacherMember = response.body.data.find(
         (m) => m.id === teacherMemberId,
       );
+      expect(teacherMember.createdAt).toBeDefined();
+      expect(teacherMember.updatedAt).toBeDefined();
       expect(teacherMember.id).toBe(teacherMemberId);
       expect(teacherMember.name).toBe(null);
       expect(teacherMember.preferredDanceRole).toBe(null);

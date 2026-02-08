@@ -182,6 +182,8 @@ export class MemberService {
         createdAt: 'desc',
       },
       select: {
+        createdAt: true,
+        updatedAt: true,
         id: true,
         name: true,
         roles: true,
