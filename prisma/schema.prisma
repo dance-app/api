@@ -257,6 +257,7 @@ model Invitation {
   type InviteType
 
   email       String?       // Optional - if inviting by email
+  phone       String?       // Optional - if inviting by phone
   firstName        String?       // Optional - for placeholder invitations
   lastName        String?       // Optional - for placeholder invitations
 

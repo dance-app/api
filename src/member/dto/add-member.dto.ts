@@ -17,6 +17,10 @@ export class AddMemberDto {
 
   @IsString()
   @IsOptional()
+  phone?: string;
+
+  @IsString()
+  @IsOptional()
   memberName?: string;
 
   @IsString()

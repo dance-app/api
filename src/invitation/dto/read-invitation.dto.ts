@@ -19,6 +19,11 @@ export class ReadInvitationDto {
   })
   email?: string;
 
+  @ApiProperty({
+    description: 'Phone number of the invited user if provided',
+  })
+  phone?: string;
+
   @ApiProperty({ description: 'First name of the invited user' })
   firstName?: string;
 

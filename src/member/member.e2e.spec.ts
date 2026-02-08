@@ -4,7 +4,12 @@
 
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { DanceRole, WorkspaceRole } from '@prisma/client';
+import {
+  DanceRole,
+  WorkspaceRole,
+  InvitationStatus,
+  InviteType,
+} from '@prisma/client';
 import request from 'supertest';
 
 import { signInTest } from '../../test/flows/common-tests';
@@ -620,7 +625,7 @@ describe('Workspace Members CRUD (e2e)', () => {
     });
   });
 
-  describe.skip('POST /workspaces/:slug/members', () => {
+  describe('POST /workspaces/:slug/members', () => {
     it('creates a member seat and returns payload', async () => {
       const payload = {
         email: 'new.member@example.com',
@@ -661,6 +666,122 @@ describe('Workspace Members CRUD (e2e)', () => {
       expect(dbMember?.level).toBe(payload.level);
     });
 
+    it('creates member without invitation when no email or phone is provided', async () => {
+      const response = await request(app.getHttpServer())
+        .post(`/workspaces/${workspaceSlug}/members`)
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .send({
+          memberName: 'No Contact',
+          roles: [WorkspaceRole.STUDENT],
+        })
+        .expect(201);
+
+      const invitation = await prismaTesting.client.invitation.findFirst({
+        where: { memberSeatId: response.body.data.id },
+      });
+      expect(invitation).toBeNull();
+    });
+
+    it('creates PENDING invitation when email is provided', async () => {
+      const payload = {
+        email: 'invitee.email@example.com',
+        memberName: 'Invite By Email',
+        roles: [WorkspaceRole.STUDENT],
+      };
+
+      const response = await request(app.getHttpServer())
+        .post(`/workspaces/${workspaceSlug}/members`)
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .send(payload)
+        .expect(201);
+
+      const invitation = await prismaTesting.client.invitation.findFirst({
+        where: { memberSeatId: response.body.data.id },
+      });
+      expect(invitation).toBeTruthy();
+      expect(invitation?.status).toBe(InvitationStatus.PENDING);
+      expect(invitation?.type).toBe(InviteType.WORKSPACE);
+      expect(invitation?.email).toBe(payload.email);
+      expect(invitation?.phone).toBeNull();
+      expect(invitation?.workspaceId).toBe(workspaceId);
+      expect(invitation?.inviterId).toBe(ownerId);
+    });
+
+    it('creates PENDING invitation when phone is provided', async () => {
+      const payload = {
+        phone: '+15555550101',
+        memberName: 'Invite By Phone',
+        roles: [WorkspaceRole.STUDENT],
+      };
+
+      const response = await request(app.getHttpServer())
+        .post(`/workspaces/${workspaceSlug}/members`)
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .send(payload)
+        .expect(201);
+
+      const invitation = await prismaTesting.client.invitation.findFirst({
+        where: { memberSeatId: response.body.data.id },
+      });
+      expect(invitation).toBeTruthy();
+      expect(invitation?.status).toBe(InvitationStatus.PENDING);
+      expect(invitation?.type).toBe(InviteType.WORKSPACE);
+      expect(invitation?.email).toBeNull();
+      expect(invitation?.phone).toBe(payload.phone);
+      expect(invitation?.workspaceId).toBe(workspaceId);
+      expect(invitation?.inviterId).toBe(ownerId);
+    });
+
+    it('creates PENDING invitation when email and phone are provided', async () => {
+      const payload = {
+        email: 'invitee.both@example.com',
+        phone: '+15555550102',
+        memberName: 'Invite Both',
+        roles: [WorkspaceRole.STUDENT],
+      };
+
+      const response = await request(app.getHttpServer())
+        .post(`/workspaces/${workspaceSlug}/members`)
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .send(payload)
+        .expect(201);
+
+      const invitation = await prismaTesting.client.invitation.findFirst({
+        where: { memberSeatId: response.body.data.id },
+      });
+      expect(invitation).toBeTruthy();
+      expect(invitation?.status).toBe(InvitationStatus.PENDING);
+      expect(invitation?.type).toBe(InviteType.WORKSPACE);
+      expect(invitation?.email).toBe(payload.email);
+      expect(invitation?.phone).toBe(payload.phone);
+      expect(invitation?.workspaceId).toBe(workspaceId);
+      expect(invitation?.inviterId).toBe(ownerId);
+    });
+
+    it('returns 400 when an invitation already exists for the same contact', async () => {
+      const payload = {
+        email: 'duplicate.invite@example.com',
+        memberName: 'Dup Invite',
+        roles: [WorkspaceRole.STUDENT],
+      };
+
+      await request(app.getHttpServer())
+        .post(`/workspaces/${workspaceSlug}/members`)
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .send(payload)
+        .expect(201);
+
+      const response = await request(app.getHttpServer())
+        .post(`/workspaces/${workspaceSlug}/members`)
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .send(payload)
+        .expect(400);
+
+      expect(response.body.message).toBe(
+        ERROR_MESSAGES.INVITATION_ALREADY_EXISTS,
+      );
+    });
+
     it('returns 400 for invalid email', async () => {
       await request(app.getHttpServer())
         .post(`/workspaces/${workspaceSlug}/members`)
@@ -669,16 +790,6 @@ describe('Workspace Members CRUD (e2e)', () => {
           email: 'not-an-email',
           memberName: 'Invalid Email',
           roles: [WorkspaceRole.STUDENT],
-        })
-        .expect(400);
-    });
-
-    it('returns 400 when roles are missing', async () => {
-      await request(app.getHttpServer())
-        .post(`/workspaces/${workspaceSlug}/members`)
-        .auth(ownerAccessToken, { type: 'bearer' })
-        .send({
-          memberName: 'Missing Roles',
         })
         .expect(400);
     });

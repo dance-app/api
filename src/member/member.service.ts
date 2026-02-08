@@ -6,7 +6,16 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Workspace, WorkspaceRole, Prisma, User, Member } from '@prisma/client';
+import {
+  Workspace,
+  WorkspaceRole,
+  Prisma,
+  User,
+  Member,
+  InvitationStatus,
+  InviteType,
+} from '@prisma/client';
+import { randomUUID } from 'crypto';
 
 import { AddMemberDto } from './dto/add-member.dto';
 import { MemberResponseDto } from './dto/member-response.dto';
@@ -224,6 +233,26 @@ export class MemberService {
         throw new BadRequestException(ERROR_MESSAGES.USER_ALREADY_MEMBER);
       }
     }
+
+    const contactEmail = data.email?.trim() || null;
+    const contactPhone = data.phone?.trim() || null;
+    if (contactEmail || contactPhone) {
+      const existingInvitation = await this.database.invitation.findFirst({
+        where: {
+          type: InviteType.WORKSPACE,
+          workspaceId: workspace.id,
+          status: InvitationStatus.PENDING,
+          OR: [
+            contactEmail ? { email: contactEmail } : {},
+            contactPhone ? { phone: contactPhone } : {},
+          ],
+        },
+      });
+      if (existingInvitation) {
+        throw new BadRequestException(ERROR_MESSAGES.INVITATION_ALREADY_EXISTS);
+      }
+    }
+
     const memberSeat = await this.database.member.create({
       data: {
         id: generateId(ID_PREFIXES.MEMBER),
@@ -239,6 +268,27 @@ export class MemberService {
         level: data.level,
       },
     });
+
+    if (contactEmail || contactPhone) {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      await this.database.invitation.create({
+        data: {
+          type: InviteType.WORKSPACE,
+          email: contactEmail,
+          phone: contactPhone,
+          firstName: null,
+          lastName: null,
+          token: randomUUID(),
+          expiresAt,
+          status: InvitationStatus.PENDING,
+          workspaceId: workspace.id,
+          inviterId: creator.id,
+          memberSeatId: memberSeat.id,
+        },
+      });
+    }
 
     return this.mapToMemberResponseDto(memberSeat);
   }

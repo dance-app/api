@@ -39,6 +39,7 @@ export const ERROR_MESSAGES = {
   MIN_8_CHARACTERS: 'min-8-characters',
   MEMBER_NOT_FOUND: 'member-not-found',
   USER_ALREADY_MEMBER: 'user-already-member',
+  INVITATION_ALREADY_EXISTS: 'invitation-already-exists',
   WORKSPACE_NOT_FOUND: 'workspace-not-found',
   EMAIL_ALREADY_EXISTS: 'email-already-exists',
   PASSWORD_REQUIRED_FOR_EMAIL_SIGN_UP: 'password-required-for-email-sign-up',

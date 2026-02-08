@@ -165,6 +165,7 @@ Table invitations {
   updatedAt DateTime [not null]
   type InviteType [not null]
   email String
+  phone String
   firstName String
   lastName String
   token String [unique, not null]
