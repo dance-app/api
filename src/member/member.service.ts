@@ -11,12 +11,12 @@ import { Workspace, WorkspaceRole, Prisma, User, Member } from '@prisma/client';
 import { AddMemberDto } from './dto/add-member.dto';
 import { MemberResponseDto } from './dto/member-response.dto';
 import { SearchMembersDto } from './dto/search-member.dto';
-import { getLevelName, getLevelValue } from './enums/dance-level.enum';
+import { getLevelName } from './enums/dance-level.enum';
 import { MemberWithUser } from './member.types';
 import { generateId, ID_PREFIXES } from '../lib/id-generator';
 
 import { DatabaseService } from '@/database/database.service';
-import { PaginatedResponseDto, PaginationDto } from '@/pagination/dto';
+import { PaginationDto } from '@/pagination/dto';
 import { PaginationService } from '@/pagination/pagination.service';
 import { WorkspaceService } from '@/workspace/workspace.service';
 
@@ -116,21 +116,35 @@ export class MemberService {
     const where: Prisma.MemberWhereInput = {
       workspaceId,
     };
-    // Add search filter if provided
-    if (queryParams.search) {
+    // Add search filter if provided (member name, user names, or account email)
+    const searchTerm = queryParams.search?.trim();
+    if (searchTerm) {
       where.OR = [
-        { name: { contains: queryParams.search, mode: 'insensitive' } },
+        { name: { contains: searchTerm, mode: 'insensitive' } },
         {
           user: {
             OR: [
               {
                 firstName: {
-                  contains: queryParams.search,
+                  contains: searchTerm,
                   mode: 'insensitive',
                 },
               },
               {
-                lastName: { contains: queryParams.search, mode: 'insensitive' },
+                lastName: {
+                  contains: searchTerm,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                accounts: {
+                  some: {
+                    email: {
+                      contains: searchTerm,
+                      mode: 'insensitive',
+                    },
+                  },
+                },
               },
             ],
           },
@@ -145,32 +159,6 @@ export class MemberService {
       };
     }
 
-    // Handle level filtering
-    if (queryParams.level) {
-      // Convert level name to numeric value
-      const levelValue = getLevelValue(queryParams.level);
-      if (levelValue === null) {
-        throw new BadRequestException(`Invalid level: ${queryParams.level}`);
-      }
-      where.level = levelValue;
-    } else {
-      // Handle min and max level filtering
-      if (
-        queryParams.minLevel !== undefined ||
-        queryParams.maxLevel !== undefined
-      ) {
-        where.level = {};
-
-        if (queryParams.minLevel !== undefined) {
-          where.level.gte = queryParams.minLevel;
-        }
-
-        if (queryParams.maxLevel !== undefined) {
-          where.level.lte = queryParams.maxLevel;
-        }
-      }
-    }
-
     // Fetch the members with the filters
     const count = await this.database.member.count({
       where,
@@ -178,37 +166,38 @@ export class MemberService {
 
     const members = await this.database.member.findMany({
       where,
-      include: {
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        id: true,
+        name: true,
+        roles: true,
+        preferredDanceRole: true,
         user: {
           select: {
+            createdAt: true,
+            updatedAt: true,
             id: true,
             firstName: true,
             lastName: true,
+            accounts: {
+              select: {
+                email: true,
+                isEmailVerified: true,
+              },
+            },
           },
         },
       },
       ...this.pagination.extractPaginationOptions(paginationOptions),
     });
 
-    // Map to DTOs and return raw data with meta
-    const mappedMembers = members.map((member) =>
-      this.mapToMemberResponseDto(member),
+    return this.pagination.createPaginatedResponse(
+      members,
+      count,
+      paginationOptions,
     );
-
-    return {
-      data: mappedMembers,
-      meta: {
-        totalCount: count,
-        count: mappedMembers.length,
-        page:
-          Math.floor(
-            (paginationOptions.offset ?? 0) / (paginationOptions.limit ?? 10),
-          ) + 1,
-        pages: Math.ceil(count / (paginationOptions.limit ?? 10)),
-        limit: paginationOptions.limit ?? 10,
-        offset: paginationOptions.offset ?? 0,
-      },
-    };
   }
 
   async getAllWorkspaceMembers(

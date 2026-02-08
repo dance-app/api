@@ -1,14 +1,6 @@
 import { DanceRole } from '@prisma/client';
-import { Transform, TransformationType, Type } from 'class-transformer';
-import {
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Max,
-  Min,
-  ValidateIf,
-} from 'class-validator';
+import { Transform, TransformationType } from 'class-transformer';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 export class SearchMembersDto {
   @IsOptional()
@@ -22,23 +14,4 @@ export class SearchMembersDto {
   })
   @IsEnum(DanceRole, { each: true })
   roles?: DanceRole[];
-
-  @IsOptional()
-  @IsString()
-  @ValidateIf((o) => !o.minLevel && !o.maxLevel)
-  level?: string;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  @Max(400)
-  minLevel?: number;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  @Max(400)
-  maxLevel?: number;
 }
