@@ -12,6 +12,7 @@ import { MockMailService } from '../../test/mock-mail.service';
 import { PrismaTestingService } from '../../test/prisma-testing.service';
 import { AppModule } from '../app.module';
 
+import { ERROR_MESSAGES } from '@/lib/constants';
 import { generateId, ID_PREFIXES } from '@/lib/id-generator';
 import { MailService } from '@/mail/mail.service';
 
@@ -364,7 +365,7 @@ describe('Workspace Members CRUD (e2e)', () => {
       expect(responseExceedPage.body.meta.offset).toBe(14);
     });
 
-    it.skip('supports roles filter (preferred dance role)', async () => {
+    it('supports roles filter for LEADER', async () => {
       const response = await request(app.getHttpServer())
         .get(`/workspaces/${workspaceSlug}/members?roles=LEADER`)
         .auth(ownerAccessToken, { type: 'bearer' })
@@ -377,6 +378,47 @@ describe('Workspace Members CRUD (e2e)', () => {
           preferredDanceRole: DanceRole.LEADER,
         }),
       );
+    });
+
+    it('supports roles filter for FOLLOWER', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/workspaces/${workspaceSlug}/members?roles=FOLLOWER`)
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .expect(200);
+
+      expect(response.body.data.length).toBe(9);
+      for (const member of response.body.data) {
+        expect(member.preferredDanceRole).toBe(DanceRole.FOLLOWER);
+      }
+    });
+
+    it('supports roles filter for LEADER,FOLLOWER', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/workspaces/${workspaceSlug}/members?roles=LEADER,FOLLOWER`)
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .expect(200);
+
+      expect(response.body.data.length).toBe(10);
+      for (const member of response.body.data) {
+        expect([DanceRole.LEADER, DanceRole.FOLLOWER]).toContain(
+          member.preferredDanceRole,
+        );
+      }
+    });
+
+    it('returns 400 for invalid roles filter', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/workspaces/${workspaceSlug}/members?roles=NOT_A_ROLE`)
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .expect(400);
+
+      expect(response.body.statusCode).toBe(400);
+      expect(response.body.error).toBe('Bad Request');
+      expect(response.body.message[0]).toBe(
+        ERROR_MESSAGES.DANCE_ROLE_FILTER_INVALID,
+      );
+
+      console.log('++++', response.body);
     });
 
     it.skip('supports search by user first name', async () => {

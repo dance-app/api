@@ -52,4 +52,5 @@ export const ERROR_MESSAGES = {
   ACCOUNT_NOT_LOCAL: 'account-not-local',
   CURRENT_PASSWORD_INCORRECT: 'current-password-incorrect',
   USER_NOT_FOUND: 'user-not-found',
+  DANCE_ROLE_FILTER_INVALID: 'invalid-dance-role-filter',
 } as const;
