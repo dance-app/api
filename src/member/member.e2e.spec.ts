@@ -417,11 +417,9 @@ describe('Workspace Members CRUD (e2e)', () => {
       expect(response.body.message[0]).toBe(
         ERROR_MESSAGES.DANCE_ROLE_FILTER_INVALID,
       );
-
-      console.log('++++', response.body);
     });
 
-    it.skip('supports search by user first name', async () => {
+    it('supports search by user first name', async () => {
       const response = await request(app.getHttpServer())
         .get(
           `/workspaces/${workspaceSlug}/members?search=${encodeURIComponent(
@@ -443,7 +441,7 @@ describe('Workspace Members CRUD (e2e)', () => {
       );
     });
 
-    it.skip('supports search by user last name', async () => {
+    it('supports search by user last name', async () => {
       const response = await request(app.getHttpServer())
         .get(
           `/workspaces/${workspaceSlug}/members?search=${encodeURIComponent(
@@ -465,7 +463,7 @@ describe('Workspace Members CRUD (e2e)', () => {
       );
     });
 
-    it.skip('supports search by account email', async () => {
+    it('supports search by account email', async () => {
       const response = await request(app.getHttpServer())
         .get(
           `/workspaces/${workspaceSlug}/members?search=${encodeURIComponent(
@@ -488,7 +486,7 @@ describe('Workspace Members CRUD (e2e)', () => {
       );
     });
 
-    it.skip('supports search by member display name', async () => {
+    it('supports search by member display name', async () => {
       const response = await request(app.getHttpServer())
         .get(
           `/workspaces/${workspaceSlug}/members?search=${encodeURIComponent(
@@ -507,7 +505,7 @@ describe('Workspace Members CRUD (e2e)', () => {
       );
     });
 
-    it.skip('supports search by user name when user has no account', async () => {
+    it('supports search by user name when user has no account', async () => {
       const response = await request(app.getHttpServer())
         .get(
           `/workspaces/${workspaceSlug}/members?search=${encodeURIComponent(
@@ -527,6 +525,98 @@ describe('Workspace Members CRUD (e2e)', () => {
           }),
         }),
       );
+    });
+
+    it('supports case-insensitive search for user name', async () => {
+      const response = await request(app.getHttpServer())
+        .get(
+          `/workspaces/${workspaceSlug}/members?search=${encodeURIComponent(
+            'teacherfirst',
+          )}`,
+        )
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0]).toEqual(
+        expect.objectContaining({
+          id: teacherMemberId,
+          user: expect.objectContaining({
+            id: teacherId,
+            firstName: teacherCredentials.firstName,
+            lastName: teacherCredentials.lastName,
+          }),
+        }),
+      );
+    });
+
+    it('supports partial match on account email', async () => {
+      const response = await request(app.getHttpServer())
+        .get(
+          `/workspaces/${workspaceSlug}/members?search=${encodeURIComponent(
+            'teacher@',
+          )}`,
+        )
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0]).toEqual(
+        expect.objectContaining({
+          id: teacherMemberId,
+          user: expect.objectContaining({
+            id: teacherId,
+            firstName: teacherCredentials.firstName,
+            lastName: teacherCredentials.lastName,
+          }),
+        }),
+      );
+    });
+
+    it('supports partial match on member display name', async () => {
+      const response = await request(app.getHttpServer())
+        .get(
+          `/workspaces/${workspaceSlug}/members?search=${encodeURIComponent(
+            'Guest Member',
+          )}`,
+        )
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(9);
+      for (const member of response.body.data) {
+        expect(member.name).toContain('Guest Member');
+        expect(member.user).toBeNull();
+      }
+    });
+
+    it('returns empty list when search has no matches', async () => {
+      const response = await request(app.getHttpServer())
+        .get(
+          `/workspaces/${workspaceSlug}/members?search=${encodeURIComponent(
+            'no-such-member',
+          )}`,
+        )
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(0);
+      expect(response.body.meta.totalCount).toBe(0);
+      expect(response.body.meta.count).toBe(0);
+    });
+
+    it('treats whitespace-only search as no filter', async () => {
+      const response = await request(app.getHttpServer())
+        .get(
+          `/workspaces/${workspaceSlug}/members?search=${encodeURIComponent(
+            '   ',
+          )}`,
+        )
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .expect(200);
+
+      expect(response.body.data.length).toBeGreaterThanOrEqual(10);
+      expect(response.body.meta.totalCount).toBe(14);
     });
   });
 
