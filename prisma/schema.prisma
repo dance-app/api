@@ -154,6 +154,8 @@ model Member {
   userId String?
 
   name String? // Can be empty if the user exists, required if user is null, by default, overrode by user.firstName + user.lastName
+  email String?
+  phone String?
 
   workspace Workspace @relation(fields: [workspaceId], references: [id])
   workspaceId String

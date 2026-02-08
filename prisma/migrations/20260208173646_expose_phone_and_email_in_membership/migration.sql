@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "members" ADD COLUMN     "email" TEXT,
+ADD COLUMN     "phone" TEXT;

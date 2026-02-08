@@ -6,17 +6,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  Workspace,
-  WorkspaceRole,
-  Prisma,
-  User,
-  Member,
-  InvitationStatus,
-  InviteType,
-} from '@prisma/client';
-import { randomUUID } from 'crypto';
-
+import { Workspace, WorkspaceRole, Prisma, User, Member } from '@prisma/client';
 import { AddMemberDto } from './dto/add-member.dto';
 import { MemberResponseDto } from './dto/member-response.dto';
 import { SearchMembersDto } from './dto/search-member.dto';
@@ -106,6 +96,8 @@ export class MemberService {
       levelName: getLevelName(member.level),
       preferredDanceRole: member.preferredDanceRole,
       workspaceId: member.workspaceId,
+      email: member.email ?? null,
+      phone: member.phone ?? null,
     };
   }
 
@@ -133,6 +125,8 @@ export class MemberService {
     if (searchTerm) {
       where.OR = [
         { name: { contains: searchTerm, mode: 'insensitive' } },
+        { email: { contains: searchTerm, mode: 'insensitive' } },
+        { phone: { contains: searchTerm, mode: 'insensitive' } },
         {
           user: {
             OR: [
@@ -238,20 +232,29 @@ export class MemberService {
 
     const contactEmail = data.email?.trim() || null;
     const contactPhone = data.phone?.trim() || null;
-    if (contactEmail || contactPhone) {
-      const existingInvitation = await this.database.invitation.findFirst({
+    if (contactEmail) {
+      const existingEmailMember = await this.database.member.findFirst({
         where: {
-          type: InviteType.WORKSPACE,
           workspaceId: workspace.id,
-          status: InvitationStatus.PENDING,
-          OR: [
-            contactEmail ? { email: contactEmail } : {},
-            contactPhone ? { phone: contactPhone } : {},
-          ],
+          email: contactEmail,
+          deletedAt: null,
         },
       });
-      if (existingInvitation) {
-        throw new BadRequestException(ERROR_MESSAGES.INVITATION_ALREADY_EXISTS);
+      if (existingEmailMember) {
+        throw new BadRequestException(ERROR_MESSAGES.MEMBER_EMAIL_ALREADY_USED);
+      }
+    }
+
+    if (contactPhone) {
+      const existingPhoneMember = await this.database.member.findFirst({
+        where: {
+          workspaceId: workspace.id,
+          phone: contactPhone,
+          deletedAt: null,
+        },
+      });
+      if (existingPhoneMember) {
+        throw new BadRequestException(ERROR_MESSAGES.MEMBER_PHONE_ALREADY_USED);
       }
     }
 
@@ -260,6 +263,8 @@ export class MemberService {
         id: generateId(ID_PREFIXES.MEMBER),
         createdById: creator.id,
         workspaceId: workspace.id,
+        email: contactEmail,
+        phone: contactPhone,
         name: data.memberName
           ? data.memberName
           : data.email?.split('@')[0] || 'New Member',
@@ -270,27 +275,6 @@ export class MemberService {
         level: data.level,
       },
     });
-
-    if (contactEmail || contactPhone) {
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7);
-
-      await this.database.invitation.create({
-        data: {
-          type: InviteType.WORKSPACE,
-          email: contactEmail,
-          phone: contactPhone,
-          firstName: null,
-          lastName: null,
-          token: randomUUID(),
-          expiresAt,
-          status: InvitationStatus.PENDING,
-          workspaceId: workspace.id,
-          inviterId: creator.id,
-          memberSeatId: memberSeat.id,
-        },
-      });
-    }
 
     return this.mapToMemberResponseDto(memberSeat);
   }

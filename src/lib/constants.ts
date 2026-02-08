@@ -40,6 +40,8 @@ export const ERROR_MESSAGES = {
   MEMBER_NOT_FOUND: 'member-not-found',
   USER_ALREADY_MEMBER: 'user-already-member',
   INVITATION_ALREADY_EXISTS: 'invitation-already-exists',
+  MEMBER_EMAIL_ALREADY_USED: 'member-email-already-used',
+  MEMBER_PHONE_ALREADY_USED: 'member-phone-already-used',
   WORKSPACE_NOT_FOUND: 'workspace-not-found',
   EMAIL_ALREADY_EXISTS: 'email-already-exists',
   PASSWORD_REQUIRED_FOR_EMAIL_SIGN_UP: 'password-required-for-email-sign-up',

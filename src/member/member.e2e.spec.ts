@@ -4,12 +4,7 @@
 
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  DanceRole,
-  WorkspaceRole,
-  InvitationStatus,
-  InviteType,
-} from '@prisma/client';
+import { DanceRole, WorkspaceRole } from '@prisma/client';
 import request from 'supertest';
 
 import { signInTest } from '../../test/flows/common-tests';
@@ -678,13 +673,11 @@ describe('Workspace Members CRUD (e2e)', () => {
         })
         .expect(201);
 
-      const invitation = await prismaTesting.client.invitation.findFirst({
-        where: { memberSeatId: response.body.data.id },
-      });
-      expect(invitation).toBeNull();
+      expect(response.body.data.email).toBeNull();
+      expect(response.body.data.phone).toBeNull();
     });
 
-    it('creates PENDING invitation when email is provided', async () => {
+    it('stores email on member when email is provided', async () => {
       const payload = {
         email: 'invitee.email@example.com',
         memberName: 'Invite By Email',
@@ -697,19 +690,17 @@ describe('Workspace Members CRUD (e2e)', () => {
         .send(payload)
         .expect(201);
 
-      const invitation = await prismaTesting.client.invitation.findFirst({
-        where: { memberSeatId: response.body.data.id },
+      expect(response.body.data.email).toBe(payload.email);
+      expect(response.body.data.phone).toBeNull();
+
+      const dbMember = await prismaTesting.client.member.findUnique({
+        where: { id: response.body.data.id },
       });
-      expect(invitation).toBeTruthy();
-      expect(invitation?.status).toBe(InvitationStatus.PENDING);
-      expect(invitation?.type).toBe(InviteType.WORKSPACE);
-      expect(invitation?.email).toBe(payload.email);
-      expect(invitation?.phone).toBeNull();
-      expect(invitation?.workspaceId).toBe(workspaceId);
-      expect(invitation?.inviterId).toBe(ownerId);
+      expect(dbMember?.email).toBe(payload.email);
+      expect(dbMember?.phone).toBeNull();
     });
 
-    it('creates PENDING invitation when phone is provided', async () => {
+    it('stores phone on member when phone is provided', async () => {
       const payload = {
         phone: '+15555550101',
         memberName: 'Invite By Phone',
@@ -722,19 +713,17 @@ describe('Workspace Members CRUD (e2e)', () => {
         .send(payload)
         .expect(201);
 
-      const invitation = await prismaTesting.client.invitation.findFirst({
-        where: { memberSeatId: response.body.data.id },
+      expect(response.body.data.email).toBeNull();
+      expect(response.body.data.phone).toBe(payload.phone);
+
+      const dbMember = await prismaTesting.client.member.findUnique({
+        where: { id: response.body.data.id },
       });
-      expect(invitation).toBeTruthy();
-      expect(invitation?.status).toBe(InvitationStatus.PENDING);
-      expect(invitation?.type).toBe(InviteType.WORKSPACE);
-      expect(invitation?.email).toBeNull();
-      expect(invitation?.phone).toBe(payload.phone);
-      expect(invitation?.workspaceId).toBe(workspaceId);
-      expect(invitation?.inviterId).toBe(ownerId);
+      expect(dbMember?.email).toBeNull();
+      expect(dbMember?.phone).toBe(payload.phone);
     });
 
-    it('creates PENDING invitation when email and phone are provided', async () => {
+    it('stores email and phone on member when both are provided', async () => {
       const payload = {
         email: 'invitee.both@example.com',
         phone: '+15555550102',
@@ -748,22 +737,20 @@ describe('Workspace Members CRUD (e2e)', () => {
         .send(payload)
         .expect(201);
 
-      const invitation = await prismaTesting.client.invitation.findFirst({
-        where: { memberSeatId: response.body.data.id },
+      expect(response.body.data.email).toBe(payload.email);
+      expect(response.body.data.phone).toBe(payload.phone);
+
+      const dbMember = await prismaTesting.client.member.findUnique({
+        where: { id: response.body.data.id },
       });
-      expect(invitation).toBeTruthy();
-      expect(invitation?.status).toBe(InvitationStatus.PENDING);
-      expect(invitation?.type).toBe(InviteType.WORKSPACE);
-      expect(invitation?.email).toBe(payload.email);
-      expect(invitation?.phone).toBe(payload.phone);
-      expect(invitation?.workspaceId).toBe(workspaceId);
-      expect(invitation?.inviterId).toBe(ownerId);
+      expect(dbMember?.email).toBe(payload.email);
+      expect(dbMember?.phone).toBe(payload.phone);
     });
 
-    it('returns 400 when an invitation already exists for the same contact', async () => {
+    it('returns 400 when email is already used by another member', async () => {
       const payload = {
-        email: 'duplicate.invite@example.com',
-        memberName: 'Dup Invite',
+        email: 'duplicate.member@example.com',
+        memberName: 'Dup Member',
         roles: [WorkspaceRole.STUDENT],
       };
 
@@ -780,7 +767,31 @@ describe('Workspace Members CRUD (e2e)', () => {
         .expect(400);
 
       expect(response.body.message).toBe(
-        ERROR_MESSAGES.INVITATION_ALREADY_EXISTS,
+        ERROR_MESSAGES.MEMBER_EMAIL_ALREADY_USED,
+      );
+    });
+
+    it('returns 400 when phone is already used by another member', async () => {
+      const payload = {
+        phone: '+15555550103',
+        memberName: 'Dup Member Phone',
+        roles: [WorkspaceRole.STUDENT],
+      };
+
+      await request(app.getHttpServer())
+        .post(`/workspaces/${workspaceSlug}/members`)
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .send(payload)
+        .expect(201);
+
+      const response = await request(app.getHttpServer())
+        .post(`/workspaces/${workspaceSlug}/members`)
+        .auth(ownerAccessToken, { type: 'bearer' })
+        .send(payload)
+        .expect(400);
+
+      expect(response.body.message).toBe(
+        ERROR_MESSAGES.MEMBER_PHONE_ALREADY_USED,
       );
     });
 

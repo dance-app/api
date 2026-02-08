@@ -102,6 +102,8 @@ Table members {
   user users
   userId String
   name String
+  email String
+  phone String
   workspace workspaces [not null]
   workspaceId String [not null]
   attendances attendees [not null]

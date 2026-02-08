@@ -11,4 +11,6 @@ export class MemberResponseDto {
   levelName: string | null;
   preferredDanceRole: DanceRole | null;
   workspaceId: string;
+  email: string | null;
+  phone: string | null;
 }
