@@ -2,7 +2,6 @@
  * pnpm run test:e2e src/member/member.e2e.spec.ts
  */
 
-import { ac } from '@faker-js/faker/dist/airline-CLphikKp';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DanceRole, WorkspaceRole } from '@prisma/client';
@@ -352,17 +351,17 @@ describe('Workspace Members CRUD (e2e)', () => {
       expect(responsePage2.body.meta.limit).toBe(2);
       expect(responsePage2.body.meta.offset).toBe(2);
 
-      const responsePage3 = await request(app.getHttpServer())
+      const responseExceedPage = await request(app.getHttpServer())
         .get(`/workspaces/${workspaceSlug}/members?limit=2&offset=14`)
         .auth(ownerAccessToken, { type: 'bearer' })
         .expect(200);
 
-      expect(responsePage3.body.meta.totalCount).toBe(14);
-      expect(responsePage3.body.meta.count).toBe(0);
-      expect(responsePage3.body.meta.page).toBe(8);
-      expect(responsePage3.body.meta.pages).toBe(7);
-      expect(responsePage3.body.meta.limit).toBe(2);
-      expect(responsePage3.body.meta.offset).toBe(14);
+      expect(responseExceedPage.body.meta.totalCount).toBe(14);
+      expect(responseExceedPage.body.meta.count).toBe(0);
+      expect(responseExceedPage.body.meta.page).toBe(8);
+      expect(responseExceedPage.body.meta.pages).toBe(7);
+      expect(responseExceedPage.body.meta.limit).toBe(2);
+      expect(responseExceedPage.body.meta.offset).toBe(14);
     });
 
     it.skip('supports roles filter (preferred dance role)', async () => {
