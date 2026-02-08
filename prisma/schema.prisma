@@ -39,6 +39,7 @@ model User {
 
   createdWorkspaces Workspace[]
   createdMembers Member[] @relation("createdMembers")
+  removedMembers Member[] @relation("removedMembers")
 
   // Materials relationships
   createdMaterials Material[] @relation("createdMaterials")
@@ -143,6 +144,8 @@ model Member {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
   deletedAt DateTime? @db.Timestamptz(3)
+  removedById String?
+  removedBy User? @relation(name: "removedMembers", fields: [removedById], references: [id])
 
   createdById String // ID of the user who added the member to the workspace
   createdBy User @relation(name: "createdMembers", fields: [createdById], references: [id])

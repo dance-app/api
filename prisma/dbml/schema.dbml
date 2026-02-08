@@ -19,6 +19,7 @@ Table users {
   receivedInvitations invitations [not null]
   createdWorkspaces workspaces [not null]
   createdMembers members [not null]
+  removedMembers members [not null]
   createdMaterials materials [not null]
   receivedMaterials material_student_shares [not null]
   sharedMaterials material_student_shares [not null]
@@ -94,6 +95,8 @@ Table members {
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
   deletedAt DateTime
+  removedById String
+  removedBy users
   createdById String [not null]
   createdBy users [not null]
   user users
@@ -360,6 +363,8 @@ Ref: email_confirmation_tokens.accountId - accounts.id [delete: Cascade]
 Ref: workspaces.createdById > users.id
 
 Ref: workspaceConfig.workspaceId - workspaces.id
+
+Ref: members.removedById > users.id
 
 Ref: members.createdById > users.id
 

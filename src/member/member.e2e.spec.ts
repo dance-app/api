@@ -919,6 +919,7 @@ describe('Workspace Members CRUD (e2e)', () => {
       });
       expect(dbMember).toBeTruthy();
       expect(dbMember?.deletedAt).toBeInstanceOf(Date);
+      expect(dbMember?.removedById).toBe(ownerId);
 
       const listResponse = await request(app.getHttpServer())
         .get(`/workspaces/${workspaceSlug}/members`)
@@ -986,7 +987,7 @@ describe('Workspace Members CRUD (e2e)', () => {
     });
   });
 
-  describe.skip('DELETE /workspaces/:slug/members (leave workspace)', () => {
+  describe('DELETE /workspaces/:slug/members (leave workspace)', () => {
     it('allows teacher to leave workspace', async () => {
       await request(app.getHttpServer())
         .delete(`/workspaces/${workspaceSlug}/members`)
@@ -996,7 +997,9 @@ describe('Workspace Members CRUD (e2e)', () => {
       const dbMember = await prismaTesting.client.member.findUnique({
         where: { id: teacherMemberId },
       });
-      expect(dbMember).toBeNull();
+      expect(dbMember).toBeTruthy();
+      expect(dbMember?.deletedAt).toBeInstanceOf(Date);
+      expect(dbMember?.removedById).toBeNull();
     });
 
     it('returns 403 for student role', async () => {

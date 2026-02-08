@@ -330,7 +330,7 @@ export class MemberService {
     return member;
   }
 
-  async delete(memberId: string) {
+  async delete(memberId: string, removedById: string) {
     const result = await this.database.member.updateMany({
       where: {
         id: memberId,
@@ -338,6 +338,7 @@ export class MemberService {
       },
       data: {
         deletedAt: new Date(),
+        removedById,
       },
     });
     if (result.count === 0) {
@@ -353,6 +354,7 @@ export class MemberService {
       },
       data: {
         deletedAt: new Date(),
+        removedById: null,
       },
     });
     if (result.count === 0) {

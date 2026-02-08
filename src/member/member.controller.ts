@@ -108,7 +108,7 @@ export class MemberController {
     ) {
       throw new UnauthorizedException('You cannot delete this member');
     }
-    await this.memberService.delete(memberToDelete.id);
+    await this.memberService.delete(memberToDelete.id, user.id);
   }
 
   @Delete() // Leave the workspace
