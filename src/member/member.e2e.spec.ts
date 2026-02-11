@@ -926,6 +926,66 @@ describe('Workspace Members CRUD (e2e)', () => {
     });
   });
 
+  describe('PATCH /workspaces/:slug/members/:memberId', () => {
+    it('allows teacher to update member fields', async () => {
+      const payload = {
+        name: 'Updated Member Name',
+        preferredDanceRole: DanceRole.FOLLOWER,
+      };
+
+      const response = await request(app.getHttpServer())
+        .patch(`/workspaces/${workspaceSlug}/members/${studentMemberId}`)
+        .auth(teacherAccessToken, { type: 'bearer' })
+        .send(payload)
+        .expect(200);
+
+      expect(response.body.data.name).toBe(payload.name);
+      expect(response.body.data.preferredDanceRole).toBe(
+        payload.preferredDanceRole,
+      );
+
+      const dbMember = await prismaTesting.client.member.findUnique({
+        where: { id: studentMemberId },
+      });
+      expect(dbMember?.name).toBe(payload.name);
+      expect(dbMember?.preferredDanceRole).toBe(payload.preferredDanceRole);
+    });
+
+    it('returns 400 when updating email to one already in use', async () => {
+      const duplicate = await prismaTesting.client.member.create({
+        data: {
+          id: generateId(ID_PREFIXES.MEMBER),
+          createdById: ownerId,
+          workspaceId,
+          roles: [WorkspaceRole.STUDENT],
+          email: 'dup.update.member@example.com',
+        },
+      });
+
+      await request(app.getHttpServer())
+        .patch(`/workspaces/${workspaceSlug}/members/${studentMemberId}`)
+        .auth(teacherAccessToken, { type: 'bearer' })
+        .send({ email: duplicate.email })
+        .expect(400);
+    });
+
+    it('returns 401 when teacher tries to update owner member', async () => {
+      await request(app.getHttpServer())
+        .patch(`/workspaces/${workspaceSlug}/members/${ownerMemberId}`)
+        .auth(teacherAccessToken, { type: 'bearer' })
+        .send({ name: 'Should Not Update' })
+        .expect(401);
+    });
+
+    it('returns 401 when teacher tries to set owner role', async () => {
+      await request(app.getHttpServer())
+        .patch(`/workspaces/${workspaceSlug}/members/${studentMemberId}`)
+        .auth(teacherAccessToken, { type: 'bearer' })
+        .send({ roles: [WorkspaceRole.OWNER] })
+        .expect(401);
+    });
+  });
+
   describe('DELETE /workspaces/:slug/members/:memberId', () => {
     it('allows owner to delete non-owner member', async () => {
       const deletableMember = await prismaTesting.client.member.create({

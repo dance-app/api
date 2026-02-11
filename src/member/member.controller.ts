@@ -7,6 +7,7 @@ import {
   Param,
   Query,
   Delete,
+  Patch,
   HttpCode,
   HttpStatus,
   UnauthorizedException,
@@ -16,6 +17,7 @@ import { Workspace, WorkspaceRole } from '@prisma/client';
 
 import { AddMemberDto } from './dto/add-member.dto';
 import { SearchMembersDto } from './dto/search-member.dto';
+import { UpdateMemberDto } from './dto/update-member.dto';
 import { MemberService } from './member.service';
 
 import { GetAuthUser } from '@/auth/decorator';
@@ -83,10 +85,22 @@ export class MemberController {
     return buildResponse(memberDto);
   }
 
-  // @Patch(':id')
-  // updateUser(@Param('id') id: string, @Body() data: UserDto) {
-  //   return this.memberService.update(id, data);
-  // }
+  @Patch(':memberId')
+  @RequireWorkspaceRoles(WorkspaceRole.OWNER, WorkspaceRole.TEACHER)
+  async updateMember(
+    @WorkspaceBySlug() workspace: Workspace,
+    @GetAuthUser() user: UserWithAccount,
+    @Param('memberId') memberId: string,
+    @Body() updateMemberDto: UpdateMemberDto,
+  ) {
+    const member = await this.memberService.updateMember(
+      workspace,
+      user,
+      memberId,
+      updateMemberDto,
+    );
+    return buildResponse(member);
+  }
 
   @Delete(':memberId')
   @HttpCode(HttpStatus.NO_CONTENT)

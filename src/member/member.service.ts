@@ -5,11 +5,14 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Workspace, WorkspaceRole, Prisma, User, Member } from '@prisma/client';
+
 import { AddMemberDto } from './dto/add-member.dto';
 import { MemberResponseDto } from './dto/member-response.dto';
 import { SearchMembersDto } from './dto/search-member.dto';
+import { UpdateMemberDto } from './dto/update-member.dto';
 import { getLevelName } from './enums/dance-level.enum';
 import { MemberWithUser } from './member.types';
 import { generateId, ID_PREFIXES } from '../lib/id-generator';
@@ -18,6 +21,7 @@ import { DatabaseService } from '@/database/database.service';
 import { ERROR_MESSAGES } from '@/lib/constants';
 import { PaginationDto } from '@/pagination/dto';
 import { PaginationService } from '@/pagination/pagination.service';
+import { UserWithAccount } from '@/user/user.types';
 import { WorkspaceService } from '@/workspace/workspace.service';
 
 @Injectable()
@@ -277,6 +281,114 @@ export class MemberService {
     });
 
     return this.mapToMemberResponseDto(memberSeat);
+  }
+
+  async updateMember(
+    workspace: Workspace,
+    updater: UserWithAccount,
+    memberId: string,
+    data: UpdateMemberDto,
+  ): Promise<MemberResponseDto> {
+    const member = await this.database.member.findFirst({
+      where: {
+        id: memberId,
+        workspaceId: workspace.id,
+        // deletedAt: null,
+      },
+      select: {
+        id: true,
+        roles: true,
+        email: true,
+        phone: true,
+      },
+    });
+    if (!member) throw new NotFoundException(ERROR_MESSAGES.MEMBER_NOT_FOUND);
+
+    const currentMember = await this.getMemberByUserId(
+      updater.id,
+      workspace.id,
+    );
+    if (!updater.isSuperAdmin && !currentMember)
+      throw new NotFoundException(ERROR_MESSAGES.MEMBER_NOT_FOUND);
+
+    if (
+      !updater.isSuperAdmin &&
+      member.roles.includes(WorkspaceRole.OWNER) &&
+      !currentMember.roles.includes(WorkspaceRole.OWNER)
+    ) {
+      throw new UnauthorizedException('You cannot update this member');
+    }
+
+    if (
+      !updater.isSuperAdmin &&
+      data.roles?.includes(WorkspaceRole.OWNER) &&
+      !currentMember.roles.includes(WorkspaceRole.OWNER)
+    ) {
+      throw new UnauthorizedException('You cannot set owner role');
+    }
+
+    const updateData: Prisma.MemberUpdateInput = {};
+
+    if (data.name !== undefined) {
+      updateData.name = data.name;
+    }
+
+    if (data.email !== undefined) {
+      const contactEmail = data.email?.trim() || null;
+      if (contactEmail && contactEmail !== member.email) {
+        const existingEmailMember = await this.database.member.findFirst({
+          where: {
+            workspaceId: workspace.id,
+            email: contactEmail,
+            deletedAt: null,
+            id: { not: member.id },
+          },
+          select: { id: true },
+        });
+        if (existingEmailMember) {
+          throw new BadRequestException(
+            ERROR_MESSAGES.MEMBER_EMAIL_ALREADY_USED,
+          );
+        }
+      }
+      updateData.email = contactEmail;
+    }
+
+    if (data.phone !== undefined) {
+      const contactPhone = data.phone?.trim() || null;
+      if (contactPhone && contactPhone !== member.phone) {
+        const existingPhoneMember = await this.database.member.findFirst({
+          where: {
+            workspaceId: workspace.id,
+            phone: contactPhone,
+            deletedAt: null,
+            id: { not: member.id },
+          },
+          select: { id: true },
+        });
+        if (existingPhoneMember) {
+          throw new BadRequestException(
+            ERROR_MESSAGES.MEMBER_PHONE_ALREADY_USED,
+          );
+        }
+      }
+      updateData.phone = contactPhone;
+    }
+
+    if (data.roles !== undefined) {
+      updateData.roles = { set: data.roles };
+    }
+
+    if (data.preferredDanceRole !== undefined) {
+      updateData.preferredDanceRole = data.preferredDanceRole;
+    }
+
+    const updatedMember = await this.database.member.update({
+      where: { id: member.id },
+      data: updateData,
+    });
+
+    return this.mapToMemberResponseDto(updatedMember);
   }
 
   async getMemberByUserId(userId: string, workspaceId: string) {
